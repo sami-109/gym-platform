@@ -69,6 +69,66 @@ export const registerMember = async (
   });
 };
 
+export const registerAdmin = async (
+  req: Request<{}, {}, RegisterBody>,
+  res: Response,
+) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      message: "Name, email, and password are required.",
+    });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({
+      message: "Please provide a valid email address.",
+    });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({
+      message: "Password must be at least 8 characters long.",
+    });
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      email: email,
+    },
+  });
+
+  if (existingUser) {
+    return res.status(400).json({
+      message: "An account with this email already exists.",
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      role: "ADMIN",
+    },
+  });
+
+  return res.status(201).json({
+    message: "Admin registration successful!",
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+};
+
 export const loginMember = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 

@@ -4,6 +4,7 @@ import {
   registerMember,
   loginMember,
   getMe,
+  registerAdmin,
 } from "../controllers/auth.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -13,5 +14,6 @@ router.post("/register", registerMember);
 router.post("/login", loginMember);
 
 router.get("/me", authMiddleware, getMe);
+router.post("/admin/register", registerAdmin);
 
 export default router;
