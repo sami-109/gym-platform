@@ -1,0 +1,50 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../generated/prisma"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+  moduleFormat           = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String   @unique
+  password    String
+  role        String   @default("MEMBER")
+  createdAt   DateTime @default(now())
+
+  managedGym  Gym?
+  memberships Membership[]
+}
+
+model Gym {
+  id          Int      @id @default(autoincrement())
+  name        String
+  address     String
+  description String?
+  createdAt   DateTime @default(now())
+
+  adminId     Int      @unique
+  admin       User     @relation(fields: [adminId], references: [id])
+
+  memberships Membership[]
+}
+
+model Membership {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  gymId      Int
+  status     String   @default("PENDING")
+  startDate  DateTime?
+  expiryDate DateTime?
+  freezeStartDate        DateTime?
+  frozenRemainingSeconds Int?
+
+  user       User     @relation(fields: [userId], references: [id])
+  gym        Gym      @relation(fields: [gymId], references: [id])
+}
