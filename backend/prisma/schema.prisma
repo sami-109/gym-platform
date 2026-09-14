@@ -11,15 +11,17 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  name        String
-  email       String   @unique
-  password    String
-  role        String   @default("MEMBER")
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  role         String   @default("MEMBER")
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
 
-  managedGym  Gym?
-  memberships Membership[]
+  managedGym   Gym?
+  memberships  Membership[]
 }
 
 model Gym {
@@ -36,15 +38,15 @@ model Gym {
 }
 
 model Membership {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  gymId      Int
-  status     String   @default("PENDING")
-  startDate  DateTime?
-  expiryDate DateTime?
+  id                     Int      @id @default(autoincrement())
+  userId                 Int      @unique
+  gymId                  Int
+  status                 String   @default("ACTIVE")
+  startDate              DateTime
+  expiryDate             DateTime
   freezeStartDate        DateTime?
   frozenRemainingSeconds Int?
 
-  user       User     @relation(fields: [userId], references: [id])
-  gym        Gym      @relation(fields: [gymId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  gym  Gym  @relation(fields: [gymId], references: [id])
 }
