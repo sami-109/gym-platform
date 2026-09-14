@@ -25,6 +25,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const isRegistering = mode === "register";
 
@@ -89,8 +90,7 @@ function App() {
       if (!isRegistering) {
         console.log("Logged-in user:", data.user);
 
-        // Redirect to the admin dashboard later.
-        // window.location.href = "/dashboard";
+        setIsLoggedIn(true);
       }
 
       setName("");
@@ -118,6 +118,15 @@ function App() {
     setPassword("");
     setConfirmPassword("");
   };
+
+  if (isLoggedIn) {
+    return (
+      <main>
+        <h1>Admin Dashboard</h1>
+        <p>Welcome to your dashboard.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="auth-page">
