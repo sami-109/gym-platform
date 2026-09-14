@@ -43,7 +43,7 @@ model Membership {
   gymId                  Int
   status                 String   @default("ACTIVE")
   startDate              DateTime
-  expiryDate             DateTime
+  expiryDate             DateTime?
   freezeStartDate        DateTime?
   frozenRemainingSeconds Int?
 
