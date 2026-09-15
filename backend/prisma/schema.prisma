@@ -16,7 +16,7 @@ model User {
   lastName         String
   username     String   @unique
   email        String?   @unique
-  phone        String
+  phone        String    @unique
   passwordHash String
   role         String   @default("MEMBER")
   status       String   @default("ACTIVE")
