@@ -5,6 +5,7 @@ import {
   renewMembership,
   freezeMembership,
   resumeMembership,
+  connectAdminToGym,
 } from "../controllers/gym.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -27,5 +28,7 @@ router.patch(
   authMiddleware,
   resumeMembership,
 );
+
+router.patch("/:gymId/admin/:adminId", authMiddleware, connectAdminToGym);
 
 export default router;
