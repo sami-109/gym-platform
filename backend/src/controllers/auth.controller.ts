@@ -4,8 +4,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 type RegisterBody = {
-  name: string;
-  email: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
   phone: string;
   password: string;
 };
@@ -14,17 +15,17 @@ export const registerAdmin = async (
   req: Request<{}, {}, RegisterBody>,
   res: Response,
 ) => {
-  const { name, email, phone, password } = req.body;
+  const { firstName, lastName, email, phone, password } = req.body;
 
-  if (!name || !email || !phone || !password) {
+  if (!firstName || !lastName || !phone || !password) {
     return res.status(400).json({
-      message: "Name, email, phone, and password are required.",
+      message: "First name, last name, phone, and password are required.",
     });
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!emailRegex.test(email)) {
+  if (email && !emailRegex.test(email)) {
     return res.status(400).json({
       message: "Please provide a valid email address.",
     });
@@ -36,11 +37,13 @@ export const registerAdmin = async (
     });
   }
 
-  const existingUser = await prisma.user.findUnique({
-    where: {
-      email: email,
-    },
-  });
+  const existingUser = email
+    ? await prisma.user.findUnique({
+        where: {
+          email,
+        },
+      })
+    : null;
 
   if (existingUser) {
     return res.status(400).json({
@@ -52,8 +55,9 @@ export const registerAdmin = async (
 
   const user = await prisma.user.create({
     data: {
-      name,
-      email,
+      firstName,
+      lastName,
+      ...(email && { email }),
       phone,
       passwordHash: hashedPassword,
       role: "ADMIN",
@@ -64,7 +68,8 @@ export const registerAdmin = async (
     message: "Admin registration successful!",
     user: {
       id: user.id,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       phone: user.phone,
       role: user.role,
@@ -73,23 +78,23 @@ export const registerAdmin = async (
 };
 
 export const loginMember = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { username, password } = req.body;
 
-  if (!email || !password) {
+  if (!username || !password) {
     return res.status(400).json({
-      message: "Email and password are required.",
+      message: "Username and password are required.",
     });
   }
 
   const user = await prisma.user.findUnique({
     where: {
-      email: email,
+      username,
     },
   });
 
   if (!user) {
     return res.status(401).json({
-      message: "Invalid email or password.",
+      message: "Invalid username or password.",
     });
   }
 
@@ -97,7 +102,7 @@ export const loginMember = async (req: Request, res: Response) => {
 
   if (!passwordMatch) {
     return res.status(401).json({
-      message: "Invalid email or password.",
+      message: "Invalid username or password.",
     });
   }
 
@@ -117,7 +122,10 @@ export const loginMember = async (req: Request, res: Response) => {
     token,
     user: {
       id: user.id,
-      name: user.name,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
       email: user.email,
       role: user.role,
     },
@@ -128,5 +136,64 @@ export const getMe = (req: Request, res: Response) => {
   return res.status(200).json({
     message: "You are authenticated!",
     user: req.user,
+  });
+};
+
+export const setupSuperAdmin = async (req: Request, res: Response) => {
+  const { setupSecret } = req.body;
+
+  if (!setupSecret) {
+    return res.status(400).json({
+      message: "Setup secret is required.",
+    });
+  }
+
+  if (setupSecret !== process.env.SUPER_ADMIN_SETUP_SECRET) {
+    return res.status(401).json({
+      message: "Invalid setup secret.",
+    });
+  }
+
+  const existingSuperAdmin = await prisma.user.findFirst({
+    where: {
+      role: "SUPER_ADMIN",
+    },
+  });
+
+  if (existingSuperAdmin) {
+    return res.status(409).json({
+      message: "A Super Admin already exists.",
+    });
+  }
+
+  const username = process.env.SUPER_ADMIN_USERNAME;
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+
+  if (!username || !password) {
+    return res.status(500).json({
+      message: "Super Admin setup variables are not configured.",
+    });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const superAdmin = await prisma.user.create({
+    data: {
+      username,
+      firstName: "Super",
+      lastName: "Admin",
+      phone: "0000000000",
+      passwordHash: hashedPassword,
+      role: "SUPER_ADMIN",
+    },
+  });
+
+  return res.status(201).json({
+    message: "Super Admin created successfully.",
+    user: {
+      id: superAdmin.id,
+      username: superAdmin.username,
+      role: superAdmin.role,
+    },
   });
 };

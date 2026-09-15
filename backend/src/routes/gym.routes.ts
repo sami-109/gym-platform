@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  createGym,
   renewMembership,
   freezeMembership,
   resumeMembership,
@@ -8,6 +9,8 @@ import {
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
+
+router.post("/", authMiddleware, createGym);
 
 router.patch(
   "/:gymId/memberships/:membershipId/renew",

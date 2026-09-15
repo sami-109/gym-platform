@@ -12,8 +12,10 @@ datasource db {
 
 model User {
   id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
+  firstName         String
+  lastName         String
+  username     String   @unique
+  email        String?   @unique
   phone        String
   passwordHash String
   role         String   @default("MEMBER")
@@ -28,11 +30,12 @@ model Gym {
   id          Int      @id @default(autoincrement())
   name        String
   address     String
+  gymCode     String   @unique
   description String?
   createdAt   DateTime @default(now())
 
-  adminId     Int      @unique
-  admin       User     @relation(fields: [adminId], references: [id])
+  adminId     Int?      @unique
+  admin       User?     @relation(fields: [adminId], references: [id])
 
   memberships Membership[]
 }

@@ -250,3 +250,39 @@ export const resumeMembership = async (
     membership: resumedMembership,
   });
 };
+
+export const createGym = async (req: Request, res: Response) => {
+  if (!req.user || req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin can create gyms.",
+    });
+  }
+
+  const { gymCode, address, description } = req.body;
+
+  if (!gymCode || !address) {
+    return res.status(400).json({
+      message: "Gym code and address are required.",
+    });
+  }
+
+  const gym = await prisma.gym.create({
+    data: {
+      gymCode,
+      name: gymCode,
+      address,
+      ...(description && { description }),
+    },
+  });
+
+  return res.status(201).json({
+    message: "Gym created successfully.",
+    gym: {
+      id: gym.id,
+      gymCode: gym.gymCode,
+      name: gym.name,
+      address: gym.address,
+      description: gym.description,
+    },
+  });
+};
