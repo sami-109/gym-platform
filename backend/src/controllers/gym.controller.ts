@@ -451,3 +451,192 @@ export const editGym = async (req: Request, res: Response) => {
     },
   });
 };
+
+export const adjustMembershipDates = async (
+  req: Request<{ gymId: string; membershipId: string }>,
+  res: Response,
+) => {
+  const gymId = Number(req.params.gymId);
+  const membershipId = Number(req.params.membershipId);
+
+  if (
+    !req.user ||
+    (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+  ) {
+    return res.status(403).json({
+      message: "Only the Super Admin or Gym Admin can adjust membership dates.",
+    });
+  }
+
+  const gym = await prisma.gym.findUnique({
+    where: {
+      id: gymId,
+    },
+  });
+
+  if (!gym) {
+    return res.status(404).json({
+      message: "Gym not found.",
+    });
+  }
+
+  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+    return res.status(403).json({
+      message: "You do not manage this gym.",
+    });
+  }
+
+  const membership = await prisma.membership.findFirst({
+    where: {
+      id: membershipId,
+      gymId,
+    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  if (membership.status === "FROZEN") {
+    return res.status(400).json({
+      message:
+        "Frozen memberships must be resumed before adjusting their dates.",
+    });
+  }
+
+  const { startDate, expiryDate } = req.body;
+
+  if (!startDate || !expiryDate) {
+    return res.status(400).json({
+      message: "Start date and expiry date are required.",
+    });
+  }
+
+  const newStartDate = new Date(startDate);
+  const newExpiryDate = new Date(expiryDate);
+
+  if (
+    Number.isNaN(newStartDate.getTime()) ||
+    Number.isNaN(newExpiryDate.getTime())
+  ) {
+    return res.status(400).json({
+      message: "Invalid start date or expiry date.",
+    });
+  }
+
+  if (newExpiryDate < newStartDate) {
+    return res.status(400).json({
+      message: "Expiry date cannot be earlier than the start date.",
+    });
+  }
+
+  const newStatus = newExpiryDate < new Date() ? "EXPIRED" : "ACTIVE";
+
+  const updatedMembership = await prisma.membership.update({
+    where: {
+      id: membershipId,
+    },
+    data: {
+      startDate: newStartDate,
+      expiryDate: newExpiryDate,
+      status: newStatus,
+    },
+  });
+
+  return res.status(200).json({
+    message: "Membership dates adjusted successfully.",
+    membership: updatedMembership,
+  });
+};
+
+export const addDayPass = async (
+  req: Request<{ gymId: string; membershipId: string }>,
+  res: Response,
+) => {
+  const gymId = Number(req.params.gymId);
+  const membershipId = Number(req.params.membershipId);
+
+  if (
+    !req.user ||
+    (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+  ) {
+    return res.status(403).json({
+      message: "Only the Super Admin or Gym Admin can add a day pass.",
+    });
+  }
+
+  const gym = await prisma.gym.findUnique({
+    where: {
+      id: gymId,
+    },
+  });
+
+  if (!gym) {
+    return res.status(404).json({
+      message: "Gym not found.",
+    });
+  }
+
+  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+    return res.status(403).json({
+      message: "You do not manage this gym.",
+    });
+  }
+
+  const membership = await prisma.membership.findFirst({
+    where: {
+      id: membershipId,
+      gymId,
+    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  if (membership.status === "FROZEN") {
+    return res.status(400).json({
+      message: "Frozen memberships must be resumed before adding a day pass.",
+    });
+  }
+
+  if (!membership.expiryDate) {
+    return res.status(400).json({
+      message: "Membership does not have an expiry date.",
+    });
+  }
+
+  const now = new Date();
+
+  if (membership.expiryDate >= now) {
+    return res.status(400).json({
+      message: "Day passes can only be added to expired memberships.",
+    });
+  }
+
+  const startDate = now;
+  const expiryDate = new Date(startDate);
+  expiryDate.setDate(expiryDate.getDate() + 1);
+
+  const updatedMembership = await prisma.membership.update({
+    where: {
+      id: membershipId,
+    },
+    data: {
+      status: "ACTIVE",
+      startDate,
+      expiryDate,
+      freezeStartDate: null,
+      frozenRemainingSeconds: null,
+    },
+  });
+
+  return res.status(200).json({
+    message: "Day pass added successfully.",
+    membership: updatedMembership,
+  });
+};

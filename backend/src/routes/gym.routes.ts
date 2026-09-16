@@ -8,6 +8,8 @@ import {
   connectAdminToGym,
   getAllGyms,
   editGym,
+  adjustMembershipDates,
+  addDayPass,
 } from "../controllers/gym.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -34,6 +36,18 @@ router.patch(
 router.patch("/:gymId/admin/:adminId", authMiddleware, connectAdminToGym);
 
 router.patch("/:gymId", authMiddleware, editGym);
+
+router.patch(
+  "/:gymId/memberships/:membershipId/dates",
+  authMiddleware,
+  adjustMembershipDates,
+);
+
+router.patch(
+  "/:gymId/memberships/:membershipId/day-pass",
+  authMiddleware,
+  addDayPass,
+);
 
 router.get("/view", authMiddleware, getAllGyms);
 
