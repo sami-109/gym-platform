@@ -134,3 +134,52 @@ export const createMember = async (req: Request, res: Response) => {
     },
   });
 };
+
+export const getMembers = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required." });
+  }
+  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
+    return res
+      .status(403)
+      .json({ message: "Only the Super Admin or Gym Admin can view members." });
+  }
+  let gymId: number | undefined;
+  if (req.user.role === "ADMIN") {
+    const adminGym = await prisma.gym.findUnique({
+      where: { adminId: req.user.userId },
+    });
+    if (!adminGym) {
+      return res
+        .status(403)
+        .json({ message: "You must be managing a gym to view members." });
+    }
+    gymId = adminGym.id;
+  }
+  const memberships = await prisma.membership.findMany({
+    ...(gymId !== undefined && { where: { gymId } }),
+    include: {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          username: true,
+          status: true,
+        },
+      },
+      gym: {
+        select: {
+          id: true,
+          name: true,
+          gymCode: true,
+        },
+      },
+    },
+  });
+
+  return res.status(200).json({
+    members: memberships,
+  });
+};
