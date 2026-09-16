@@ -96,3 +96,49 @@ export const getAllAdmins = async (req: Request, res: Response) => {
     admins,
   });
 };
+
+export const disconnectAdminFromGym = async (req: Request, res: Response) => {
+  if (!req.user || req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin can disconnect an Admin from a gym.",
+    });
+  }
+
+  const { adminId } = req.params;
+
+  const adminIdNumber = Number(adminId);
+
+  const admin = await prisma.user.findUnique({
+    where: {
+      id: adminIdNumber,
+    },
+    include: {
+      managedGym: true,
+    },
+  });
+
+  if (!admin || admin.role !== "ADMIN") {
+    return res.status(404).json({
+      message: "Admin account not found.",
+    });
+  }
+
+  if (!admin.managedGym) {
+    return res.status(409).json({
+      message: "This Admin is not managing a gym.",
+    });
+  }
+
+  await prisma.gym.update({
+    where: {
+      id: admin.managedGym.id,
+    },
+    data: {
+      adminId: null,
+    },
+  });
+
+  return res.status(200).json({
+    message: `${admin.firstName} ${admin.lastName} is no longer managing ${admin.managedGym.name}.`,
+  });
+};
