@@ -183,3 +183,44 @@ export const getMembers = async (req: Request, res: Response) => {
     members: memberships,
   });
 };
+
+export const getMyMembership = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "MEMBER") {
+    return res.status(403).json({
+      message: "Only members can view their own membership.",
+    });
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId: req.user.userId,
+    },
+    include: {
+      gym: {
+        select: {
+          id: true,
+          name: true,
+          gymCode: true,
+          address: true,
+          description: true,
+        },
+      },
+    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  return res.status(200).json({
+    membership,
+  });
+};
