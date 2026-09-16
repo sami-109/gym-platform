@@ -142,3 +142,87 @@ export const disconnectAdminFromGym = async (req: Request, res: Response) => {
     message: `${admin.firstName} ${admin.lastName} is no longer managing ${admin.managedGym.name}.`,
   });
 };
+
+export const editAdmin = async (req: Request, res: Response) => {
+  if (!req.user || req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin can edit Admin accounts.",
+    });
+  }
+
+  const adminId = Number(req.params.adminId);
+
+  const { firstName, lastName, phone, email } = req.body;
+
+  const admin = await prisma.user.findUnique({
+    where: {
+      id: adminId,
+    },
+  });
+
+  if (!admin || admin.role !== "ADMIN") {
+    return res.status(404).json({
+      message: "Admin account not found.",
+    });
+  }
+
+  if (!firstName && !lastName && !phone && email === undefined) {
+    return res.status(400).json({
+      message: "At least one Admin field must be provided.",
+    });
+  }
+
+  if (phone && phone !== admin.phone) {
+    const existingPhone = await prisma.user.findUnique({
+      where: {
+        phone,
+      },
+    });
+
+    if (existingPhone) {
+      return res.status(409).json({
+        message: "An account with this phone number already exists.",
+      });
+    }
+  }
+
+  if (email && email !== admin.email) {
+    const existingEmail = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (existingEmail) {
+      return res.status(409).json({
+        message: "An account with this email already exists.",
+      });
+    }
+  }
+
+  const updatedAdmin = await prisma.user.update({
+    where: {
+      id: adminId,
+    },
+    data: {
+      ...(firstName !== undefined && { firstName }),
+      ...(lastName !== undefined && { lastName }),
+      ...(phone !== undefined && { phone }),
+      ...(email !== undefined && { email }),
+    },
+  });
+
+  return res.status(200).json({
+    message: "Admin account updated successfully.",
+    admin: {
+      id: updatedAdmin.id,
+      firstName: updatedAdmin.firstName,
+      lastName: updatedAdmin.lastName,
+      username: updatedAdmin.username,
+      phone: updatedAdmin.phone,
+      email: updatedAdmin.email,
+      role: updatedAdmin.role,
+      status: updatedAdmin.status,
+    },
+  });
+};
