@@ -4,6 +4,7 @@ import prisma from "./lib/prisma.js";
 import authRoutes from "./routes/auth.routes.js";
 import gymRoutes from "./routes/gym.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import memberRoutes from "./routes/member.routes.js";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/gyms", gymRoutes);
 app.use("/api/admins", adminRoutes);
+app.use("/api/members", memberRoutes);
 
 const PORT = 3000;
 
