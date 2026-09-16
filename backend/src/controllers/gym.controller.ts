@@ -8,9 +8,12 @@ export const renewMembership = async (
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
 
-  if (!req.user || req.user.role !== "ADMIN") {
+  if (
+    !req.user ||
+    (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+  ) {
     return res.status(403).json({
-      message: "Only admins can renew memberships.",
+      message: "Only the Super Admin or Gym Admin can renew memberships.",
     });
   }
 
@@ -26,7 +29,7 @@ export const renewMembership = async (
     });
   }
 
-  if (gym.adminId !== req.user.userId) {
+  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
@@ -101,9 +104,12 @@ export const freezeMembership = async (
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
 
-  if (!req.user || req.user.role !== "ADMIN") {
+  if (
+    !req.user ||
+    (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+  ) {
     return res.status(403).json({
-      message: "Only admins can freeze memberships.",
+      message: "Only the Super Admin or Gym Admin can freeze memberships.",
     });
   }
 
@@ -119,7 +125,7 @@ export const freezeMembership = async (
     });
   }
 
-  if (gym.adminId !== req.user.userId) {
+  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
@@ -181,9 +187,12 @@ export const resumeMembership = async (
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
 
-  if (!req.user || req.user.role !== "ADMIN") {
+  if (
+    !req.user ||
+    (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+  ) {
     return res.status(403).json({
-      message: "Only admins can resume memberships.",
+      message: "Only the Super Admin or Gym Admin can resume memberships.",
     });
   }
 
@@ -199,7 +208,7 @@ export const resumeMembership = async (
     });
   }
 
-  if (gym.adminId !== req.user.userId) {
+  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
