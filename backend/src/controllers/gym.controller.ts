@@ -350,3 +350,31 @@ export const connectAdminToGym = async (req: Request, res: Response) => {
     },
   });
 };
+
+export const getAllGyms = async (req: Request, res: Response) => {
+  if (!req.user || req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin can view gyms.",
+    });
+  }
+
+  const gyms = await prisma.gym.findMany({
+    select: {
+      id: true,
+      name: true,
+      gymCode: true,
+      address: true,
+      description: true,
+      admin: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+        },
+      },
+    },
+  });
+
+  return res.status(200).json({ gyms });
+};

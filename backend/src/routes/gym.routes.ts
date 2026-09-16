@@ -6,6 +6,7 @@ import {
   freezeMembership,
   resumeMembership,
   connectAdminToGym,
+  getAllGyms,
 } from "../controllers/gym.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -30,5 +31,7 @@ router.patch(
 );
 
 router.patch("/:gymId/admin/:adminId", authMiddleware, connectAdminToGym);
+
+router.get("/view", authMiddleware, getAllGyms);
 
 export default router;
