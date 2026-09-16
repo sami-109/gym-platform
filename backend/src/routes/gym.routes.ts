@@ -7,6 +7,7 @@ import {
   resumeMembership,
   connectAdminToGym,
   getAllGyms,
+  editGym,
 } from "../controllers/gym.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -31,6 +32,8 @@ router.patch(
 );
 
 router.patch("/:gymId/admin/:adminId", authMiddleware, connectAdminToGym);
+
+router.patch("/:gymId", authMiddleware, editGym);
 
 router.get("/view", authMiddleware, getAllGyms);
 

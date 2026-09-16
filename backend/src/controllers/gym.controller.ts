@@ -378,3 +378,67 @@ export const getAllGyms = async (req: Request, res: Response) => {
 
   return res.status(200).json({ gyms });
 };
+
+export const editGym = async (req: Request, res: Response) => {
+  const { gymId } = req.params;
+  const { name, address, description } = req.body;
+
+  const gymIdNumber = Number(gymId);
+
+  const gym = await prisma.gym.findUnique({
+    where: {
+      id: gymIdNumber,
+    },
+    include: {
+      admin: true,
+    },
+  });
+
+  if (!gym) {
+    return res.status(404).json({
+      message: "Gym not found.",
+    });
+  }
+
+  if (req.user?.role === "SUPER_ADMIN") {
+    // Super Admin can edit any gym.
+  } else if (req.user?.role === "ADMIN") {
+    if (gym.adminId !== req.user.userId) {
+      return res.status(403).json({
+        message: "You can only edit the gym you manage.",
+      });
+    }
+  } else {
+    return res.status(403).json({
+      message: "Only a Super Admin or Gym Admin can edit gyms.",
+    });
+  }
+
+  if (!name && !address && !description) {
+    return res.status(400).json({
+      message: "At least one gym field must be provided.",
+    });
+  }
+
+  const updatedGym = await prisma.gym.update({
+    where: {
+      id: gymIdNumber,
+    },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(address !== undefined && { address }),
+      ...(description !== undefined && { description }),
+    },
+  });
+
+  return res.status(200).json({
+    message: "Gym updated successfully.",
+    gym: {
+      id: updatedGym.id,
+      name: updatedGym.name,
+      gymCode: updatedGym.gymCode,
+      address: updatedGym.address,
+      description: updatedGym.description,
+    },
+  });
+};
