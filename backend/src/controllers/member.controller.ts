@@ -224,3 +224,84 @@ export const getMyMembership = async (req: Request, res: Response) => {
     membership,
   });
 };
+
+export const deactivateMember = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin or Gym Admin can deactivate members.",
+    });
+  }
+
+  const memberId = Number(req.params.memberId);
+
+  const member = await prisma.user.findUnique({
+    where: {
+      id: memberId,
+    },
+  });
+
+  if (!member || member.role !== "MEMBER") {
+    return res.status(404).json({
+      message: "Member not found.",
+    });
+  }
+
+  if (req.user.role === "ADMIN") {
+    const adminGym = await prisma.gym.findUnique({
+      where: {
+        adminId: req.user.userId,
+      },
+    });
+
+    if (!adminGym) {
+      return res.status(403).json({
+        message: "You must be managing a gym to deactivate members.",
+      });
+    }
+
+    const membership = await prisma.membership.findFirst({
+      where: {
+        userId: memberId,
+        gymId: adminGym.id,
+      },
+    });
+
+    if (!membership) {
+      return res.status(403).json({
+        message: "You can only deactivate members of your gym.",
+      });
+    }
+  }
+
+  if (member.status === "DEACTIVATED") {
+    return res.status(400).json({
+      message: "Member is already deactivated.",
+    });
+  }
+
+  const updatedMember = await prisma.user.update({
+    where: {
+      id: memberId,
+    },
+    data: {
+      status: "DEACTIVATED",
+    },
+  });
+
+  return res.status(200).json({
+    message: "Member deactivated successfully.",
+    member: {
+      id: updatedMember.id,
+      firstName: updatedMember.firstName,
+      lastName: updatedMember.lastName,
+      username: updatedMember.username,
+      status: updatedMember.status,
+    },
+  });
+};

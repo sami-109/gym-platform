@@ -32,6 +32,12 @@ export const loginMember = async (req: Request, res: Response) => {
     });
   }
 
+  if (user.status === "DEACTIVATED") {
+    return res.status(403).json({
+      message: "This account has been deactivated.",
+    });
+  }
+
   const token = jwt.sign(
     {
       userId: user.id,
