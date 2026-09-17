@@ -6,6 +6,7 @@ import {
   getMyMembership,
   deactivateMember,
   activateMember,
+  editMember,
 } from "../controllers/member.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -20,5 +21,7 @@ router.get("/me/membership", authMiddleware, getMyMembership);
 router.patch("/:memberId/deactivate", authMiddleware, deactivateMember);
 
 router.patch("/:memberId/activate", authMiddleware, activateMember);
+
+router.patch("/:memberId", authMiddleware, editMember);
 
 export default router;
