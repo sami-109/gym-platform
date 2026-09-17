@@ -144,13 +144,25 @@ export const disconnectAdminFromGym = async (req: Request, res: Response) => {
 };
 
 export const editAdmin = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "SUPER_ADMIN") {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
     return res.status(403).json({
-      message: "Only the Super Admin can edit Admin accounts.",
+      message: "Only the Super Admin or Gym Admin can edit Admin accounts.",
     });
   }
 
   const adminId = Number(req.params.adminId);
+
+  if (req.user.role === "ADMIN" && adminId !== req.user.userId) {
+    return res.status(403).json({
+      message: "You can only edit your own Admin account.",
+    });
+  }
 
   const { firstName, lastName, phone, email } = req.body;
 
