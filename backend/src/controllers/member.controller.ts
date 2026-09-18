@@ -2,6 +2,7 @@ import { type Request, type Response } from "express";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import prisma from "../lib/prisma.js";
+import { updateMembershipExpiration } from "../utils/membership.js";
 
 export const createMember = async (req: Request, res: Response) => {
   const { firstName, lastName, phone, email, gymId } = req.body;
@@ -219,9 +220,13 @@ export const getMyMembership = async (req: Request, res: Response) => {
       message: "Membership not found.",
     });
   }
+  const currentStatus = await updateMembershipExpiration(membership);
 
   return res.status(200).json({
-    membership,
+    membership: {
+      ...membership,
+      status: currentStatus,
+    },
   });
 };
 
