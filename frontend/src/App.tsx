@@ -1,10 +1,58 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
+
+const getMembershipTimeRemaining = (
+  expiryDate: string,
+  currentTime: number,
+) => {
+  const remainingMilliseconds = new Date(expiryDate).getTime() - currentTime;
+
+  if (remainingMilliseconds <= 0) {
+    return "Membership expired";
+  }
+
+  const totalMinutes = Math.floor(remainingMilliseconds / (1000 * 60));
+
+  const days = Math.floor(totalMinutes / (60 * 24));
+
+  if (days > 0) {
+    return `${days} ${days === 1 ? "day" : "days"} remaining`;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+
+  if (hours > 0) {
+    return `${hours} ${hours === 1 ? "hour" : "hours"} remaining`;
+  }
+
+  const minutes = totalMinutes;
+
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"} remaining`;
+};
+
+const getMembershipDisplay = (
+  membership: {
+    status: string;
+    expiryDate: string | null;
+  },
+  currentTime: number,
+) => {
+  if (membership.status === "FROZEN") {
+    return "Membership Frozen";
+  }
+
+  if (!membership.expiryDate) {
+    return "Membership expired";
+  }
+
+  return getMembershipTimeRemaining(membership.expiryDate, currentTime);
+};
 
 function App() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   const [user, setUser] = useState<{
     id: number;
@@ -14,6 +62,13 @@ function App() {
     phone: string;
     email: string | null;
     role: string;
+  } | null>(null);
+
+  const [membership, setMembership] = useState<{
+    id: number;
+    status: string;
+    startDate: string;
+    expiryDate: string | null;
   } | null>(null);
 
   const handleLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
@@ -55,6 +110,55 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60 * 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const fetchMembership = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "http://localhost:3000/api/members/me/membership",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.log("Membership fetch failed:", data);
+          return;
+        }
+
+        setMembership(data.membership);
+        console.log("Membership received:", data.membership);
+      } catch (error) {
+        console.log("Could not fetch membership:", error);
+      }
+    };
+
+    fetchMembership();
+  }, [user]);
+
   if (user) {
     return (
       <main className="dashboard">
@@ -66,7 +170,11 @@ function App() {
               {user.firstName} {user.lastName}
             </h2>
 
-            <p>Membership details</p>
+            <p>
+              {membership
+                ? getMembershipDisplay(membership, currentTime)
+                : "Loading membership..."}
+            </p>
           </div>
         </section>
       </main>
