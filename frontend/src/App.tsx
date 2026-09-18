@@ -1,129 +1,74 @@
 import { useState } from "react";
 import "./App.css";
 
-type AuthMode = "login" | "register";
-
-interface AuthResponse {
-  message?: string;
-  token?: string;
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-  };
-}
-
 function App() {
-  const [mode, setMode] = useState<AuthMode>("login");
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<{
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string | null;
+    role: string;
+  } | null>(null);
 
-  const isRegistering = mode === "register";
-
-  const handleSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    setError("");
-    setSuccess("");
-
-    if (isRegistering && password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    setLoading(true);
+    setMessage("");
 
     try {
-      const endpoint = isRegistering
-        ? "http://localhost:3000/api/auth/admin/register"
-        : "http://localhost:3000/api/auth/login";
-
-      const requestBody = isRegistering
-        ? {
-            name,
-            email,
-            password,
-          }
-        : {
-            email,
-            password,
-          };
-
-      const response = await fetch(endpoint, {
+      const response = await fetch("http://localhost:3000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          username,
+          password,
+        }),
       });
 
-      const text = await response.text();
-
-      console.log("Status:", response.status);
-      console.log("Response:", text);
-
-      const data: AuthResponse = JSON.parse(text);
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Something went wrong.");
+        setMessage(data.message || "Login failed.");
+        return;
       }
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
+      localStorage.setItem("token", data.token);
 
-      setSuccess(
-        isRegistering
-          ? "Admin account created successfully."
-          : "Login successful.",
-      );
+      setUser(data.user);
 
-      if (!isRegistering) {
-        console.log("Logged-in user:", data.user);
+      console.log("First name received:", data.user.firstName);
+      console.log("Last name received:", data.user.lastName);
 
-        setIsLoggedIn(true);
-      }
+      setMessage("Login successful!");
 
-      setName("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred.");
-      }
-    } finally {
-      setLoading(false);
+      console.log("Logged-in user:", data.user);
+    } catch {
+      setMessage("Could not connect to the server.");
     }
   };
 
-  const switchMode = () => {
-    setMode(isRegistering ? "login" : "register");
-
-    setError("");
-    setSuccess("");
-    setName("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-  };
-
-  if (isLoggedIn) {
+  if (user) {
     return (
-      <main>
-        <h1>Admin Dashboard</h1>
-        <p>Welcome to your dashboard.</p>
+      <main className="dashboard">
+        <section className="profile-header">
+          <div className="profile-icon">👤</div>
+
+          <div>
+            <h2>
+              {user.firstName} {user.lastName}
+            </h2>
+
+            <p>Membership details</p>
+          </div>
+        </section>
       </main>
     );
   }
@@ -133,42 +78,18 @@ function App() {
       <section className="auth-card">
         <h1>Gym Platform</h1>
 
-        <p className="auth-subtitle">
-          {isRegistering
-            ? "Create an admin account"
-            : "Login to your admin account"}
-        </p>
+        <p className="auth-subtitle">Login to your account</p>
 
-        {error && <div className="message error-message">{error}</div>}
-
-        {success && <div className="message success-message">{success}</div>}
-
-        <form onSubmit={handleSubmit}>
-          {isRegistering && (
-            <div className="form-group">
-              <label htmlFor="name">Name</label>
-
-              <input
-                type="text"
-                id="name"
-                placeholder="Enter your name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-              />
-            </div>
-          )}
-
+        <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="username">Username</label>
 
             <input
-              type="email"
-              id="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
+              type="text"
+              id="username"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
             />
           </div>
 
@@ -181,41 +102,12 @@ function App() {
               placeholder="Enter your password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={8}
             />
           </div>
 
-          {isRegistering && (
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm password</label>
-
-              <input
-                type="password"
-                id="confirmPassword"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-                minLength={8}
-              />
-            </div>
-          )}
-
-          <button type="submit" disabled={loading}>
-            {loading
-              ? "Please wait..."
-              : isRegistering
-                ? "Register Admin"
-                : "Login"}
-          </button>
+          <button type="submit">Login</button>
         </form>
-
-        <button className="switch-button" onClick={switchMode}>
-          {isRegistering
-            ? "Already have an admin account? Login"
-            : "Need to register an admin account?"}
-        </button>
+        {message && <p>{message}</p>}
       </section>
     </main>
   );
