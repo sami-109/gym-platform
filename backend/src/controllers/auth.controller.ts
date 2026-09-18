@@ -64,10 +64,48 @@ export const loginMember = async (req: Request, res: Response) => {
   });
 };
 
-export const getMe = (req: Request, res: Response) => {
+export const getMe = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: req.user.userId,
+    },
+    include: {
+      managedGym: {
+        select: {
+          id: true,
+          name: true,
+          gymCode: true,
+          address: true,
+          description: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found.",
+    });
+  }
+
   return res.status(200).json({
     message: "You are authenticated!",
-    user: req.user,
+    user: {
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      email: user.email,
+      role: user.role,
+      managedGym: user.managedGym,
+    },
   });
 };
 

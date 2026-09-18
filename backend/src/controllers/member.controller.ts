@@ -180,6 +180,12 @@ export const getMembers = async (req: Request, res: Response) => {
     },
   });
 
+  for (const membership of memberships) {
+    const currentStatus = await updateMembershipExpiration(membership);
+
+    membership.status = currentStatus ?? membership.status;
+  }
+
   return res.status(200).json({
     members: memberships,
   });

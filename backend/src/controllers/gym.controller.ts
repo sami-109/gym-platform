@@ -168,6 +168,7 @@ export const freezeMembership = async (
     },
     data: {
       status: "FROZEN",
+      startDate: now,
       freezeStartDate: now,
       frozenRemainingSeconds: remainingSeconds,
       expiryDate: null,
@@ -248,6 +249,7 @@ export const resumeMembership = async (
     },
     data: {
       status: "ACTIVE",
+      startDate: now,
       expiryDate: newExpiryDate,
       freezeStartDate: null,
       frozenRemainingSeconds: null,
