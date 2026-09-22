@@ -32,8 +32,6 @@ export const renewMembership = async (
     });
   }
 
-  const gym = managedGym.gym;
-
   const membership = await prisma.membership.findFirst({
     where: {
       id: membershipId,
@@ -126,8 +124,6 @@ export const freezeMembership = async (
     });
   }
 
-  const gym = managedGym.gym;
-
   const membership = await prisma.membership.findFirst({
     where: {
       id: membershipId,
@@ -207,8 +203,6 @@ export const resumeMembership = async (
       message: "You do not manage this gym.",
     });
   }
-
-  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
@@ -479,8 +473,6 @@ export const adjustMembershipDates = async (
     });
   }
 
-  const gym = managedGym.gym;
-
   const membership = await prisma.membership.findFirst({
     where: {
       id: membershipId,
@@ -575,8 +567,6 @@ export const addDayPass = async (
       message: "You do not manage this gym.",
     });
   }
-
-  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
