@@ -16,6 +16,19 @@ export const createAdmin = async (req: Request, res: Response) => {
       message: "Only the Super Admin can create Admin accounts.",
     });
   }
+
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      phone,
+    },
+  });
+
+  if (existingUser) {
+    return res.status(409).json({
+      message: "An account with this phone number already exists.",
+    });
+  }
+
   const baseUsername = `${firstName}${lastName}`
     .toLowerCase()
     .replace(/\s+/g, "");
@@ -29,18 +42,6 @@ export const createAdmin = async (req: Request, res: Response) => {
   }
   const password = crypto.randomBytes(8).toString("hex");
   const hashedPassword = await bcrypt.hash(password, 10);
-
-  const existingUser = await prisma.user.findUnique({
-    where: {
-      phone,
-    },
-  });
-
-  if (existingUser) {
-    return res.status(409).json({
-      message: "An account with this phone number already exists.",
-    });
-  }
 
   const admin = await prisma.user.create({
     data: {

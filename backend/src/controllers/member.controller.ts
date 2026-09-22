@@ -3,6 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import prisma from "../lib/prisma.js";
 import { updateMembershipExpiration } from "../utils/membership.js";
+import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
 
 export const createMember = async (req: Request, res: Response) => {
   const { firstName, lastName, phone, email, gymId } = req.body;
@@ -28,11 +29,7 @@ export const createMember = async (req: Request, res: Response) => {
 
     targetGymId = Number(gymId);
   } else if (req.user.role === "ADMIN") {
-    const adminGym = await prisma.gym.findUnique({
-      where: {
-        adminId: req.user.userId,
-      },
-    });
+    const adminGym = await getAdminGym(req.user.userId);
 
     if (!adminGym) {
       return res.status(403).json({
@@ -147,9 +144,7 @@ export const getMembers = async (req: Request, res: Response) => {
   }
   let gymId: number | undefined;
   if (req.user.role === "ADMIN") {
-    const adminGym = await prisma.gym.findUnique({
-      where: { adminId: req.user.userId },
-    });
+    const adminGym = await getAdminGym(req.user.userId);
     if (!adminGym) {
       return res
         .status(403)
@@ -264,11 +259,7 @@ export const deactivateMember = async (req: Request, res: Response) => {
   }
 
   if (req.user.role === "ADMIN") {
-    const adminGym = await prisma.gym.findUnique({
-      where: {
-        adminId: req.user.userId,
-      },
-    });
+    const adminGym = await getAdminGym(req.user.userId);
 
     if (!adminGym) {
       return res.status(403).json({
@@ -276,14 +267,9 @@ export const deactivateMember = async (req: Request, res: Response) => {
       });
     }
 
-    const membership = await prisma.membership.findFirst({
-      where: {
-        userId: memberId,
-        gymId: adminGym.id,
-      },
-    });
+    const isMember = await isMemberInGym(memberId, adminGym.id);
 
-    if (!membership) {
+    if (!isMember) {
       return res.status(403).json({
         message: "You can only deactivate members of your gym.",
       });
@@ -345,11 +331,7 @@ export const activateMember = async (req: Request, res: Response) => {
   }
 
   if (req.user.role === "ADMIN") {
-    const adminGym = await prisma.gym.findUnique({
-      where: {
-        adminId: req.user.userId,
-      },
-    });
+    const adminGym = await getAdminGym(req.user.userId);
 
     if (!adminGym) {
       return res.status(403).json({
@@ -357,14 +339,9 @@ export const activateMember = async (req: Request, res: Response) => {
       });
     }
 
-    const membership = await prisma.membership.findFirst({
-      where: {
-        userId: memberId,
-        gymId: adminGym.id,
-      },
-    });
+    const isMember = await isMemberInGym(memberId, adminGym.id);
 
-    if (!membership) {
+    if (!isMember) {
       return res.status(403).json({
         message: "You can only activate members of your gym.",
       });
@@ -434,11 +411,7 @@ export const editMember = async (req: Request, res: Response) => {
   }
 
   if (req.user.role === "ADMIN") {
-    const adminGym = await prisma.gym.findUnique({
-      where: {
-        adminId: req.user.userId,
-      },
-    });
+    const adminGym = await getAdminGym(req.user.userId);
 
     if (!adminGym) {
       return res.status(403).json({
@@ -446,14 +419,9 @@ export const editMember = async (req: Request, res: Response) => {
       });
     }
 
-    const membership = await prisma.membership.findFirst({
-      where: {
-        userId: memberId,
-        gymId: adminGym.id,
-      },
-    });
+    const isMember = await isMemberInGym(memberId, adminGym.id);
 
-    if (!membership) {
+    if (!isMember) {
       return res.status(403).json({
         message: "You can only edit members of your gym.",
       });

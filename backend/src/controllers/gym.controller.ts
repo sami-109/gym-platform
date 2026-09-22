@@ -1,5 +1,6 @@
 import { type Request, type Response } from "express";
 import prisma from "../lib/prisma.js";
+import { getManagedGym } from "../utils/authorization.js";
 
 export const renewMembership = async (
   req: Request<{ gymId: string; membershipId: string }>,
@@ -17,23 +18,21 @@ export const renewMembership = async (
     });
   }
 
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymId,
-    },
-  });
+  const managedGym = await getManagedGym(gymId, req.user.userId, req.user.role);
 
-  if (!gym) {
+  if (managedGym.reason === "NOT_FOUND") {
     return res.status(404).json({
       message: "Gym not found.",
     });
   }
 
-  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+  if (managedGym.reason === "NOT_MANAGED") {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
   }
+
+  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
@@ -113,23 +112,21 @@ export const freezeMembership = async (
     });
   }
 
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymId,
-    },
-  });
+  const managedGym = await getManagedGym(gymId, req.user.userId, req.user.role);
 
-  if (!gym) {
+  if (managedGym.reason === "NOT_FOUND") {
     return res.status(404).json({
       message: "Gym not found.",
     });
   }
 
-  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+  if (managedGym.reason === "NOT_MANAGED") {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
   }
+
+  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
@@ -197,23 +194,21 @@ export const resumeMembership = async (
     });
   }
 
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymId,
-    },
-  });
+  const managedGym = await getManagedGym(gymId, req.user.userId, req.user.role);
 
-  if (!gym) {
+  if (managedGym.reason === "NOT_FOUND") {
     return res.status(404).json({
       message: "Gym not found.",
     });
   }
 
-  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+  if (managedGym.reason === "NOT_MANAGED") {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
   }
+
+  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
@@ -470,23 +465,21 @@ export const adjustMembershipDates = async (
     });
   }
 
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymId,
-    },
-  });
+  const managedGym = await getManagedGym(gymId, req.user.userId, req.user.role);
 
-  if (!gym) {
+  if (managedGym.reason === "NOT_FOUND") {
     return res.status(404).json({
       message: "Gym not found.",
     });
   }
 
-  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+  if (managedGym.reason === "NOT_MANAGED") {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
   }
+
+  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
@@ -569,23 +562,21 @@ export const addDayPass = async (
     });
   }
 
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymId,
-    },
-  });
+  const managedGym = await getManagedGym(gymId, req.user.userId, req.user.role);
 
-  if (!gym) {
+  if (managedGym.reason === "NOT_FOUND") {
     return res.status(404).json({
       message: "Gym not found.",
     });
   }
 
-  if (req.user.role === "ADMIN" && gym.adminId !== req.user.userId) {
+  if (managedGym.reason === "NOT_MANAGED") {
     return res.status(403).json({
       message: "You do not manage this gym.",
     });
   }
+
+  const gym = managedGym.gym;
 
   const membership = await prisma.membership.findFirst({
     where: {
