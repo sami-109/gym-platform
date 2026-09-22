@@ -1,3 +1,5 @@
+import "./Login.scss";
+
 type LoginProps = {
   username: string;
   password: string;

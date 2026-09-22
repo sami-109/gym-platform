@@ -1,5 +1,7 @@
 import type { Member } from "../../types/member";
 import { getMembershipDisplay } from "../../utils/membership";
+import "../../styles/_modal.scss";
+import "./ManageMember.scss";
 
 type ManageMemberProps = {
   member: Member;

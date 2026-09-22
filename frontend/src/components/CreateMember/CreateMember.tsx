@@ -1,3 +1,5 @@
+import "../../styles/_modal.scss";
+
 type CreateMemberProps = {
   firstName: string;
   lastName: string;

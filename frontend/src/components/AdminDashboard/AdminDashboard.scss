@@ -1,0 +1,38 @@
+.dashboard {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.members-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 32px;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.members-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.members-header button {
+  padding: 10px 16px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.members-header button:hover {
+  opacity: 0.9;
+}

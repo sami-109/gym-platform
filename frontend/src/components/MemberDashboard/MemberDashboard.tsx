@@ -1,5 +1,7 @@
 import { getMembershipDisplay } from "../../utils/membership";
 import type { Membership } from "../../types/membership";
+import "./MemberDashboard.scss";
+import "../../styles/_profile.scss";
 
 type MemberDashboardProps = {
   firstName: string;

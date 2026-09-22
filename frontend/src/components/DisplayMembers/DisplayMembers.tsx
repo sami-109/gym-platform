@@ -1,5 +1,6 @@
 import { formatDate, getDaysRemaining } from "../../utils/membership";
 import type { Member } from "../../types/member";
+import "./DisplayMembers.scss";
 
 type DisplayMembersProps = {
   members: Member[];
@@ -44,7 +45,13 @@ function DisplayMembers({
               className={
                 member.user.status === "DEACTIVATED"
                   ? "member-row-deactivated"
-                  : ""
+                  : member.status === "FROZEN"
+                    ? "member-row-frozen"
+                    : member.status === "EXPIRED"
+                      ? "member-row-expired"
+                      : member.status === "ACTIVE"
+                        ? "member-row-active"
+                        : ""
               }
             >
               <td>{member.user.id}</td>

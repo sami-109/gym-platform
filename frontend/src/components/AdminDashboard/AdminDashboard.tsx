@@ -1,3 +1,6 @@
+import "./AdminDashboard.scss";
+import "../../styles/_profile.scss";
+
 type AdminDashboardProps = {
   firstName: string;
   lastName: string;

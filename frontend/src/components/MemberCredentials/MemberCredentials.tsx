@@ -1,3 +1,6 @@
+import "../../styles/_modal.scss";
+import "./MemberCredentials.scss";
+
 type MemberCredentialsProps = {
   memberId: number | null;
   memberName: string;
