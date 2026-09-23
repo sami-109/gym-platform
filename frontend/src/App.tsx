@@ -60,6 +60,9 @@ function App() {
     closeManageMember,
     handleApplyChanges,
     openManageMember,
+    retrieveCredentials,
+    retrievedCredentials,
+    clearRetrievedCredentials,
 
     editFirstName,
     setEditFirstName,
@@ -81,6 +84,10 @@ function App() {
   } = useManageMember(members, setMembers);
 
   const { membership } = useMembership(user?.id, user?.role);
+
+  const retrievedMember = retrievedCredentials
+    ? members.find((member) => member.user.id === retrievedCredentials.userId)
+    : null;
 
   if (user) {
     if (user.role === "MEMBER") {
@@ -139,11 +146,26 @@ function App() {
               />
             )}
 
+            {retrievedCredentials && retrievedMember && (
+              <MemberCredentials
+                memberId={retrievedMember.user.id}
+                memberName={`${retrievedMember.user.firstName} ${retrievedMember.user.lastName}`}
+                memberPhone={retrievedMember.user.phone}
+                memberEmail={retrievedMember.user.email || ""}
+                membershipType=""
+                username={retrievedCredentials.username}
+                password={retrievedCredentials.password}
+                title="Credentials Updated"
+                onClose={clearRetrievedCredentials}
+              />
+            )}
+
             <DisplayMembers
               members={members}
               currentTime={currentTime}
               onAddMember={() => setAddMember(true)}
               onManageMember={openManageMember}
+              onRetrieveCredentials={retrieveCredentials}
             />
           </section>
         )}

@@ -14,6 +14,15 @@ function useManageMember(
   const [editExpiryDate, setEditExpiryDate] = useState("");
   const [editAction, setEditAction] = useState("");
   const [manageMemberError, setManageMemberError] = useState("");
+  const [retrievedCredentials, setRetrievedCredentials] = useState<{
+    userId: number;
+    username: string;
+    password: string;
+  } | null>(null);
+
+  const clearRetrievedCredentials = () => {
+    setRetrievedCredentials(null);
+  };
 
   const selectedMember = members.find(
     (member) => member.id === selectedMemberId,
@@ -456,8 +465,40 @@ function useManageMember(
     setEditAction("");
   };
 
+  const retrieveCredentials = async (memberId: number) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/members/${memberId}/retrieve-credentials`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to retrieve credentials.");
+      }
+
+      setRetrievedCredentials(data.credentials);
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return {
     selectedMemberId,
+    retrievedCredentials,
+    clearRetrievedCredentials,
 
     editFirstName,
     setEditFirstName,
@@ -480,6 +521,7 @@ function useManageMember(
     handleApplyChanges,
     openManageMember,
     manageMemberError,
+    retrieveCredentials,
   };
 }
 

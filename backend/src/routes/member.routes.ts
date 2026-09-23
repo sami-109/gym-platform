@@ -7,6 +7,7 @@ import {
   deactivateMember,
   activateMember,
   editMember,
+  retrieveCredentials,
 } from "../controllers/member.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -23,5 +24,11 @@ router.patch("/:memberId/deactivate", authMiddleware, deactivateMember);
 router.patch("/:memberId/activate", authMiddleware, activateMember);
 
 router.patch("/:memberId", authMiddleware, editMember);
+
+router.post(
+  "/:memberId/retrieve-credentials",
+  authMiddleware,
+  retrieveCredentials,
+);
 
 export default router;

@@ -1,16 +1,22 @@
 import { type Request, type Response } from "express";
-import crypto from "crypto";
-import bcrypt from "bcrypt";
+import { hashPassword } from "../utils/passwordHash.js";
+import { generateMemberPassword } from "../utils/password.js";
 import prisma from "../lib/prisma.js";
 import { updateMembershipExpiration } from "../utils/membership.js";
 import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
 
 export const createMember = async (req: Request, res: Response) => {
-  const { firstName, lastName, phone, email, gymId } = req.body;
+  const { firstName, lastName, phone, email, gymId, membershipType } = req.body;
 
   if (!firstName || !lastName || !phone) {
     return res.status(400).json({
       message: "First name, last name, and phone are required.",
+    });
+  }
+
+  if (!["1-month", "trial", "day-pass"].includes(membershipType)) {
+    return res.status(400).json({
+      message: "Invalid membership type.",
     });
   }
 
@@ -94,14 +100,19 @@ export const createMember = async (req: Request, res: Response) => {
     });
   }
 
-  const password = crypto.randomBytes(8).toString("hex");
+  const password = generateMemberPassword();
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await hashPassword(password);
 
   const startDate = new Date();
 
   const expiryDate = new Date(startDate);
-  expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+  if (membershipType === "1-month") {
+    expiryDate.setMonth(expiryDate.getMonth() + 1);
+  } else if (membershipType === "trial" || membershipType === "day-pass") {
+    expiryDate.setDate(expiryDate.getDate() + 1);
+  }
 
   const result = await prisma.$transaction(async (tx) => {
     const member = await tx.user.create({
@@ -502,6 +513,73 @@ export const editMember = async (req: Request, res: Response) => {
       phone: updatedMember.phone,
       email: updatedMember.email,
       status: updatedMember.status,
+    },
+  });
+};
+
+export const retrieveCredentials = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin or Gym Admin can retrieve credentials.",
+    });
+  }
+
+  const memberId = Number(req.params.memberId);
+
+  const member = await prisma.user.findUnique({
+    where: {
+      id: memberId,
+    },
+  });
+
+  if (!member || member.role !== "MEMBER") {
+    return res.status(404).json({
+      message: "Member not found.",
+    });
+  }
+
+  if (req.user.role === "ADMIN") {
+    const adminGym = await getAdminGym(req.user.userId);
+
+    if (!adminGym) {
+      return res.status(403).json({
+        message: "You must be managing a gym to retrieve credentials.",
+      });
+    }
+
+    const isMember = await isMemberInGym(memberId, adminGym.id);
+
+    if (!isMember) {
+      return res.status(403).json({
+        message: "You can only retrieve credentials for members of your gym.",
+      });
+    }
+  }
+
+  const newPassword = generateMemberPassword();
+  const hashedPassword = await hashPassword(newPassword);
+
+  const updatedMember = await prisma.user.update({
+    where: {
+      id: memberId,
+    },
+    data: {
+      passwordHash: hashedPassword,
+    },
+  });
+
+  return res.status(200).json({
+    message: "Credentials reset successfully.",
+    credentials: {
+      userId: updatedMember.id,
+      username: updatedMember.username,
+      password: newPassword,
     },
   });
 };

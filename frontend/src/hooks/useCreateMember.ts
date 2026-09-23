@@ -41,6 +41,7 @@ function useCreateMember(fetchMembers: () => Promise<void>) {
           lastName: newMemberLastName,
           phone: newMemberPhone,
           email: newMemberEmail || undefined,
+          membershipType: newMemberMembershipType,
         }),
       });
 

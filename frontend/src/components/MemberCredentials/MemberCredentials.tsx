@@ -1,14 +1,16 @@
 import "../../styles/_modal.scss";
 import "./MemberCredentials.scss";
+import { formatPhone } from "../../utils/phone";
 
 type MemberCredentialsProps = {
   memberId: number | null;
   memberName: string;
   memberPhone: string;
   memberEmail: string;
-  membershipType: string;
+  membershipType?: string;
   username: string;
   password: string;
+  title?: string;
 
   onClose: () => void;
 };
@@ -22,13 +24,15 @@ function MemberCredentials({
   username,
   password,
   onClose,
+  title,
 }: MemberCredentialsProps) {
-  const membershipTypeDisplay =
-    {
-      "1-month": "1 Month",
-      trial: "Trial",
-      "day-pass": "Day Pass",
-    }[membershipType] || membershipType;
+  const membershipTypeDisplay = membershipType
+    ? {
+        "1-month": "1 Month",
+        trial: "Trial",
+        "day-pass": "Day Pass",
+      }[membershipType] || membershipType
+    : "";
   return (
     <div className="modal-backdrop">
       <div className="manage-member-modal">
@@ -36,7 +40,7 @@ function MemberCredentials({
           ×
         </button>
 
-        <h2>Member Created Successfully</h2>
+        <h2>{title || "Member Created Successfully"}</h2>
 
         <div className="form-section">
           <h3>Member Information</h3>
@@ -51,16 +55,21 @@ function MemberCredentials({
             </p>
 
             <p>
-              <strong>Mobile:</strong> {memberPhone}
+              <strong>Mobile:</strong>{" "}
+              {memberPhone.startsWith("961")
+                ? `(+961) ${formatPhone(memberPhone)}`
+                : formatPhone(memberPhone)}
             </p>
 
             <p>
               <strong>Email:</strong> {memberEmail || "Not provided"}
             </p>
 
-            <p>
-              <strong>Membership:</strong> {membershipTypeDisplay}
-            </p>
+            {membershipType && (
+              <p>
+                <strong>Membership:</strong> {membershipTypeDisplay}
+              </p>
+            )}
           </div>
         </div>
 
