@@ -108,10 +108,30 @@ export const createMember = async (req: Request, res: Response) => {
 
   const expiryDate = new Date(startDate);
 
+  const membershipPrices = await prisma.membershipPrice.findUnique({
+    where: {
+      gymId: gym.id,
+    },
+  });
+
+  if (!membershipPrices) {
+    return res.status(400).json({
+      message: "Membership prices have not been set for this gym.",
+    });
+  }
+
   if (membershipType === "1-month") {
     expiryDate.setMonth(expiryDate.getMonth() + 1);
   } else if (membershipType === "trial" || membershipType === "day-pass") {
     expiryDate.setDate(expiryDate.getDate() + 1);
+  }
+
+  let amountPaid = membershipPrices.oneMonth;
+
+  if (membershipType === "trial") {
+    amountPaid = membershipPrices.trial;
+  } else if (membershipType === "day-pass") {
+    amountPaid = membershipPrices.dayPass;
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -137,7 +157,21 @@ export const createMember = async (req: Request, res: Response) => {
       },
     });
 
-    return { member, membership };
+    const transaction = await tx.transaction.create({
+      data: {
+        memberId: member.id,
+        gymId: gym.id,
+        performedByUserId: req.user!.userId,
+        action: membershipType,
+        transactionDate: new Date(),
+        startDate,
+        endDate: expiryDate,
+        amountPaid,
+        profit: amountPaid,
+      },
+    });
+
+    return { member, membership, transaction };
   });
 
   return res.status(201).json({
@@ -581,5 +615,84 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
       username: updatedMember.username,
       password: newPassword,
     },
+  });
+};
+
+export const deleteMember = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
+    return res.status(403).json({
+      message: "Only an Admin can delete members.",
+    });
+  }
+
+  const memberId = Number(req.params.memberId);
+
+  if (!memberId) {
+    return res.status(400).json({
+      message: "Invalid member ID.",
+    });
+  }
+
+  const member = await prisma.user.findUnique({
+    where: { id: memberId },
+    include: {
+      memberships: true,
+    },
+  });
+
+  if (!member || member.role !== "MEMBER") {
+    return res.status(404).json({
+      message: "Member not found.",
+    });
+  }
+
+  let gymId: number | null = null;
+
+  if (req.user.role === "ADMIN") {
+    const adminGym = await getAdminGym(req.user.userId);
+
+    if (!adminGym) {
+      return res.status(403).json({
+        message: "You must be managing a gym.",
+      });
+    }
+
+    const memberInGym = await isMemberInGym(memberId, adminGym.id);
+
+    if (!memberInGym) {
+      return res.status(403).json({
+        message: "This member does not belong to your gym.",
+      });
+    }
+
+    gymId = adminGym.id;
+  } else if (member.memberships.length > 0) {
+    gymId = member.memberships[0]?.gymId ?? null;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.activityLog.create({
+      data: {
+        memberId: member.id,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "MEMBER_DELETED",
+        details: `Deleted member ${member.firstName} ${member.lastName}.`,
+      },
+    });
+
+    await tx.user.delete({
+      where: { id: memberId },
+    });
+  });
+
+  return res.status(200).json({
+    message: "Member deleted successfully.",
   });
 };

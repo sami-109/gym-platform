@@ -8,6 +8,7 @@ import {
   activateMember,
   editMember,
   retrieveCredentials,
+  deleteMember,
 } from "../controllers/member.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
@@ -30,5 +31,7 @@ router.post(
   authMiddleware,
   retrieveCredentials,
 );
+
+router.delete("/:memberId", authMiddleware, deleteMember);
 
 export default router;

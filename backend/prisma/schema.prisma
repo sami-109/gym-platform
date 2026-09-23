@@ -24,6 +24,12 @@ model User {
 
   managedGym   Gym?
   memberships  Membership[]
+
+  transactions          Transaction[] @relation("MemberTransactions")
+  performedTransactions Transaction[] @relation("PerformedTransactions")
+
+  activityLogs          ActivityLog[] @relation("MemberActivityLogs")
+  performedActivityLogs ActivityLog[] @relation("PerformedActivityLogs")
 }
 
 model Gym {
@@ -36,8 +42,11 @@ model Gym {
 
   adminId     Int?      @unique
   admin       User?     @relation(fields: [adminId], references: [id])
+  membershipPrice MembershipPrice?
 
   memberships Membership[]
+  transactions Transaction[]
+  activityLogs ActivityLog[]
 }
 
 model Membership {
@@ -50,6 +59,51 @@ model Membership {
   freezeStartDate        DateTime?
   frozenRemainingSeconds Int?
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   gym  Gym  @relation(fields: [gymId], references: [id])
+}
+
+model Transaction {
+  id                Int      @id @default(autoincrement())
+  memberId          Int?
+  gymId             Int
+  performedByUserId Int?
+  action            String
+  transactionDate   DateTime @default(now())
+  startDate         DateTime?
+  endDate           DateTime?
+  amountPaid        Decimal  @db.Decimal(10, 2)
+  profit            Decimal  @db.Decimal(10, 2)
+  details           String?
+  createdAt         DateTime @default(now())
+
+  member      User? @relation("MemberTransactions", fields: [memberId], references: [id], onDelete: SetNull)
+  gym         Gym    @relation(fields: [gymId], references: [id])
+  performedBy User?  @relation("PerformedTransactions", fields: [performedByUserId], references: [id], onDelete: SetNull)
+}
+
+model ActivityLog {
+  id                Int      @id @default(autoincrement())
+  memberId          Int?
+  gymId             Int?
+  performedByUserId Int?
+  action            String
+  details           String?
+  createdAt         DateTime @default(now())
+
+  member      User? @relation("MemberActivityLogs", fields: [memberId], references: [id], onDelete: SetNull)
+  gym         Gym?  @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  performedBy User? @relation("PerformedActivityLogs", fields: [performedByUserId], references: [id], onDelete: SetNull)
+}
+
+model MembershipPrice {
+  id        Int      @id @default(autoincrement())
+  gymId     Int      @unique
+  dayPass   Decimal  @db.Decimal(10, 2)
+  trial     Decimal  @db.Decimal(10, 2)
+  oneMonth  Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gym Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
 }

@@ -7,6 +7,8 @@ import adminRoutes from "./routes/admin.routes.js";
 import memberRoutes from "./routes/member.routes.js";
 import cors from "cors";
 import { errorMiddleware } from "./middleware/error.middleware.js";
+import transactionRoutes from "./routes/transaction.routes.js";
+import membershipPriceRoutes from "./routes/membershipPrice.routes.js";
 
 const app = express();
 
@@ -22,6 +24,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/gyms", gymRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/members", memberRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/membership-prices", membershipPriceRoutes);
 
 app.use(errorMiddleware);
 
