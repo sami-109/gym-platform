@@ -7,11 +7,23 @@ import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
 
 export const createMember = async (req: Request, res: Response) => {
   const { firstName, lastName, phone, email, gymId } = req.body;
+
   if (!firstName || !lastName || !phone) {
     return res.status(400).json({
       message: "First name, last name, and phone are required.",
     });
   }
+
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address.",
+      });
+    }
+  }
+
   if (!req.user) {
     return res.status(401).json({
       message: "Authentication required.",
@@ -161,6 +173,7 @@ export const getMembers = async (req: Request, res: Response) => {
           firstName: true,
           lastName: true,
           phone: true,
+          email: true,
           username: true,
           status: true,
         },
@@ -396,6 +409,16 @@ export const editMember = async (req: Request, res: Response) => {
     return res.status(400).json({
       message: "First name, last name, and phone are required.",
     });
+  }
+
+  if (email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address.",
+      });
+    }
   }
 
   const member = await prisma.user.findUnique({

@@ -39,6 +39,7 @@ function useMembers(userRole: string | undefined) {
   return {
     members,
     setMembers,
+    fetchMembers,
   };
 }
 

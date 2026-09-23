@@ -1,4 +1,5 @@
 import "../../styles/_modal.scss";
+import PhoneInput from "../../components/PhoneInput/PhoneInput";
 
 type CreateMemberProps = {
   firstName: string;
@@ -6,11 +7,14 @@ type CreateMemberProps = {
   phone: string;
   email: string;
   creating: boolean;
+  error: string;
+  membershipType: string;
 
   onFirstNameChange: (value: string) => void;
   onLastNameChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
   onEmailChange: (value: string) => void;
+  onMembershipTypeChange: (value: string) => void;
 
   onCreate: () => void;
   onClose: () => void;
@@ -21,6 +25,7 @@ function CreateMember({
   lastName,
   phone,
   email,
+  membershipType,
   creating,
   onFirstNameChange,
   onLastNameChange,
@@ -28,6 +33,8 @@ function CreateMember({
   onEmailChange,
   onCreate,
   onClose,
+  onMembershipTypeChange,
+  error,
 }: CreateMemberProps) {
   return (
     <div className="modal-backdrop">
@@ -60,14 +67,7 @@ function CreateMember({
               />
             </label>
 
-            <label>
-              Phone
-              <input
-                type="text"
-                value={phone}
-                onChange={(event) => onPhoneChange(event.target.value)}
-              />
-            </label>
+            <PhoneInput phone={phone} onPhoneChange={onPhoneChange} />
 
             <label>
               Email
@@ -77,7 +77,20 @@ function CreateMember({
                 onChange={(event) => onEmailChange(event.target.value)}
               />
             </label>
+            {error && <p className="form-error">{error}</p>}
           </div>
+
+          <label>
+            Membership Type
+            <select
+              value={membershipType}
+              onChange={(event) => onMembershipTypeChange(event.target.value)}
+            >
+              <option value="1-month">1 Month</option>
+              <option value="trial">Trial</option>
+              <option value="day-pass">Day Pass</option>
+            </select>
+          </label>
         </div>
 
         <div className="modal-actions">

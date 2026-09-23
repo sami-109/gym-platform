@@ -26,7 +26,7 @@ function App() {
     handleLogin,
   } = useLogin();
 
-  const { members, setMembers } = useMembers(user?.role);
+  const { members, setMembers, fetchMembers } = useMembers(user?.role);
 
   const {
     creatingMember,
@@ -49,7 +49,11 @@ function App() {
     createdMemberPhone,
     createdMemberEmail,
     handleCreateMember,
-  } = useCreateMember();
+    createMemberError,
+    newMemberMembershipType,
+    setNewMemberMembershipType,
+    createdMemberMembershipType,
+  } = useCreateMember(fetchMembers);
 
   const {
     selectedMemberId,
@@ -73,6 +77,7 @@ function App() {
     setEditAction,
 
     selectedMember,
+    manageMemberError,
   } = useManageMember(members, setMembers);
 
   const { membership } = useMembership(user?.id, user?.role);
@@ -102,11 +107,14 @@ function App() {
                 lastName={newMemberLastName}
                 phone={newMemberPhone}
                 email={newMemberEmail}
+                membershipType={newMemberMembershipType}
+                error={createMemberError}
                 creating={creatingMember}
                 onFirstNameChange={setNewMemberFirstName}
                 onLastNameChange={setNewMemberLastName}
                 onPhoneChange={setNewMemberPhone}
                 onEmailChange={setNewMemberEmail}
+                onMembershipTypeChange={setNewMemberMembershipType}
                 onCreate={handleCreateMember}
                 onClose={() => {
                   setMemberCreated(false);
@@ -121,6 +129,7 @@ function App() {
                 memberName={createdMemberName}
                 memberPhone={createdMemberPhone}
                 memberEmail={createdMemberEmail}
+                membershipType={createdMemberMembershipType}
                 username={createdMemberUsername}
                 password={createdMemberPassword}
                 onClose={() => {
@@ -147,6 +156,7 @@ function App() {
             lastName={editLastName}
             phone={editPhone}
             email={editEmail}
+            error={manageMemberError}
             startDate={editStartDate}
             expiryDate={editExpiryDate}
             action={editAction}

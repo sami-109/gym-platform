@@ -1,6 +1,7 @@
 import { formatDate, getDaysRemaining } from "../../utils/membership";
 import type { Member } from "../../types/member";
 import "./DisplayMembers.scss";
+import { formatPhone } from "../../utils/phone";
 
 type DisplayMembersProps = {
   members: Member[];
@@ -57,7 +58,7 @@ function DisplayMembers({
               <td>{member.user.id}</td>
               <td>{member.user.firstName}</td>
               <td>{member.user.lastName}</td>
-              <td>{member.user.phone}</td>
+              <td>{formatPhone(member.user.phone)}</td>
               <td>{formatDate(member.startDate)}</td>
               <td>{formatDate(member.expiryDate)}</td>
               <td>{getDaysRemaining(member, currentTime)}</td>

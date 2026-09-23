@@ -13,6 +13,7 @@ function useManageMember(
   const [editStartDate, setEditStartDate] = useState("");
   const [editExpiryDate, setEditExpiryDate] = useState("");
   const [editAction, setEditAction] = useState("");
+  const [manageMemberError, setManageMemberError] = useState("");
 
   const selectedMember = members.find(
     (member) => member.id === selectedMemberId,
@@ -312,6 +313,8 @@ function useManageMember(
 
     if (!token) return;
 
+    setManageMemberError("");
+
     const response = await fetch(
       `http://localhost:3000/api/members/${selectedMember.user.id}`,
       {
@@ -331,7 +334,10 @@ function useManageMember(
 
     const data = await response.json();
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      setManageMemberError(data.message || "Something went wrong.");
+      return;
+    }
 
     setMembers((currentMembers) =>
       currentMembers.map((member) =>
@@ -359,6 +365,18 @@ function useManageMember(
     }
 
     try {
+      // First save personal information if it changed
+      const personalInfoChanged =
+        editFirstName !== selectedMember.user.firstName ||
+        editLastName !== selectedMember.user.lastName ||
+        editPhone !== selectedMember.user.phone ||
+        editEmail !== (selectedMember.user.email || "");
+
+      if (personalInfoChanged) {
+        await editMember(editFirstName, editLastName, editPhone, editEmail);
+      }
+
+      // Then perform the selected membership action
       if (editAction === "freeze") {
         await freezeMember();
         return;
@@ -371,11 +389,6 @@ function useManageMember(
 
       if (editAction === "renew") {
         await renewMember();
-        return;
-      }
-
-      if (!editAction && editStartDate && editExpiryDate) {
-        await adjustMembershipDates(editStartDate, editExpiryDate);
         return;
       }
 
@@ -394,8 +407,29 @@ function useManageMember(
         return;
       }
 
-      await editMember(editFirstName, editLastName, editPhone, editEmail);
-    } catch (error) {}
+      // If there is no action, check whether dates changed
+      if (
+        !editAction &&
+        editStartDate &&
+        editExpiryDate &&
+        (editStartDate !==
+          new Date(selectedMember.startDate).toISOString().slice(0, 16) ||
+          editExpiryDate !==
+            (selectedMember.expiryDate
+              ? new Date(selectedMember.expiryDate).toISOString().slice(0, 16)
+              : ""))
+      ) {
+        await adjustMembershipDates(editStartDate, editExpiryDate);
+        return;
+      }
+
+      // Nothing else to do
+      if (!editAction && !personalInfoChanged) {
+        closeManageMember();
+      }
+    } catch (error) {
+      // Keep the modal open if something goes wrong
+    }
   };
 
   const openManageMember = (memberId: number) => {
@@ -445,6 +479,7 @@ function useManageMember(
 
     handleApplyChanges,
     openManageMember,
+    manageMemberError,
   };
 }
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function useCreateMember() {
+function useCreateMember(fetchMembers: () => Promise<void>) {
   const [creatingMember, setCreatingMember] = useState(false);
   const [newMemberFirstName, setNewMemberFirstName] = useState("");
   const [newMemberLastName, setNewMemberLastName] = useState("");
@@ -14,6 +14,11 @@ function useCreateMember() {
   const [createdMemberName, setCreatedMemberName] = useState("");
   const [createdMemberPhone, setCreatedMemberPhone] = useState("");
   const [createdMemberEmail, setCreatedMemberEmail] = useState("");
+  const [createMemberError, setCreateMemberError] = useState("");
+  const [newMemberMembershipType, setNewMemberMembershipType] =
+    useState("1-month");
+  const [createdMemberMembershipType, setCreatedMemberMembershipType] =
+    useState("1-month");
 
   const createMember = async () => {
     const token = localStorage.getItem("token");
@@ -42,6 +47,7 @@ function useCreateMember() {
       const data = await response.json();
 
       if (!response.ok) {
+        setCreateMemberError(data.message || "Something went wrong.");
         return;
       }
 
@@ -66,10 +72,13 @@ function useCreateMember() {
         return;
       }
 
+      await fetchMembers();
+
       setCreatedMemberId(result.memberId);
       setCreatedMemberName(result.memberName);
       setCreatedMemberPhone(result.memberPhone);
       setCreatedMemberEmail(result.memberEmail);
+      setCreatedMemberMembershipType(newMemberMembershipType);
 
       setCreatedMemberUsername(result.username);
       setCreatedMemberPassword(result.password);
@@ -105,6 +114,10 @@ function useCreateMember() {
     createdMemberPhone,
     createdMemberEmail,
     handleCreateMember,
+    createMemberError,
+    newMemberMembershipType,
+    setNewMemberMembershipType,
+    createdMemberMembershipType,
   };
 }
 

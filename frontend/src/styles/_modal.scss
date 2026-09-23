@@ -155,3 +155,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+.phone-input {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.phone-input select {
+  width: auto;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.phone-input input {
+  flex: 1;
+  min-width: 0;
+}

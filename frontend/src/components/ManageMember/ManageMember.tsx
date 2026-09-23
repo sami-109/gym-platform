@@ -1,5 +1,8 @@
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import type { Member } from "../../types/member";
 import { getMembershipDisplay } from "../../utils/membership";
+import PhoneInput from "../PhoneInput/PhoneInput";
 import "../../styles/_modal.scss";
 import "./ManageMember.scss";
 
@@ -14,6 +17,7 @@ type ManageMemberProps = {
   startDate: string;
   expiryDate: string;
   action: string;
+  error: string;
 
   onFirstNameChange: (value: string) => void;
   onLastNameChange: (value: string) => void;
@@ -46,6 +50,7 @@ function ManageMember({
   onActionChange,
   onApply,
   onClose,
+  error,
 }: ManageMemberProps) {
   return (
     <div className="modal-backdrop">
@@ -85,14 +90,7 @@ function ManageMember({
             </label>
           </div>
 
-          <label>
-            Phone
-            <input
-              type="text"
-              value={phone}
-              onChange={(event) => onPhoneChange(event.target.value)}
-            />
-          </label>
+          <PhoneInput phone={phone} onPhoneChange={onPhoneChange} />
 
           <label>
             Email
@@ -102,6 +100,7 @@ function ManageMember({
               onChange={(event) => onEmailChange(event.target.value)}
             />
           </label>
+          {error && <p className="form-error">{error}</p>}
         </div>
 
         <div className="form-section">
@@ -148,19 +147,29 @@ function ManageMember({
               <div className="form-grid">
                 <label>
                   Start Date
-                  <input
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(event) => onStartDateChange(event.target.value)}
+                  <DatePicker
+                    selected={startDate ? new Date(startDate) : null}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        onStartDateChange(date.toISOString());
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    disabled={action !== ""}
                   />
                 </label>
 
                 <label>
                   End Date
-                  <input
-                    type="datetime-local"
-                    value={expiryDate}
-                    onChange={(event) => onExpiryDateChange(event.target.value)}
+                  <DatePicker
+                    selected={expiryDate ? new Date(expiryDate) : null}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        onExpiryDateChange(date.toISOString());
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    disabled={action !== ""}
                   />
                 </label>
               </div>

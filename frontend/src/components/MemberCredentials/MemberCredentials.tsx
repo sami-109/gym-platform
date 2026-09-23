@@ -6,6 +6,7 @@ type MemberCredentialsProps = {
   memberName: string;
   memberPhone: string;
   memberEmail: string;
+  membershipType: string;
   username: string;
   password: string;
 
@@ -17,10 +18,17 @@ function MemberCredentials({
   memberName,
   memberPhone,
   memberEmail,
+  membershipType,
   username,
   password,
   onClose,
 }: MemberCredentialsProps) {
+  const membershipTypeDisplay =
+    {
+      "1-month": "1 Month",
+      trial: "Trial",
+      "day-pass": "Day Pass",
+    }[membershipType] || membershipType;
   return (
     <div className="modal-backdrop">
       <div className="manage-member-modal">
@@ -48,6 +56,10 @@ function MemberCredentials({
 
             <p>
               <strong>Email:</strong> {memberEmail || "Not provided"}
+            </p>
+
+            <p>
+              <strong>Membership:</strong> {membershipTypeDisplay}
             </p>
           </div>
         </div>
