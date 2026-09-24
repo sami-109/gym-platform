@@ -77,20 +77,50 @@ export const renewMembership = async (
     newExpiryDate.setMonth(newExpiryDate.getMonth() + 1);
   }
 
-  const updatedMembership = await prisma.membership.update({
+  const membershipPrice = await prisma.membershipPrice.findUnique({
     where: {
-      id: membershipId,
+      gymId,
     },
-    data: {
-      status: "ACTIVE",
-      startDate: newStartDate,
-      expiryDate: newExpiryDate,
-    },
+  });
+
+  if (!membershipPrice) {
+    return res.status(400).json({
+      message: "Membership prices have not been set for this gym.",
+    });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMembership = await tx.membership.update({
+      where: {
+        id: membershipId,
+      },
+      data: {
+        status: "ACTIVE",
+        startDate: newStartDate,
+        expiryDate: newExpiryDate,
+      },
+    });
+
+    const transaction = await tx.transaction.create({
+      data: {
+        memberId: membership.userId,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "1-month",
+        transactionDate: now,
+        startDate: newStartDate,
+        endDate: newExpiryDate,
+        amountPaid: membershipPrice.oneMonth,
+        profit: membershipPrice.oneMonth,
+      },
+    });
+
+    return { updatedMembership, transaction };
   });
 
   return res.status(200).json({
     message: "Membership renewed successfully.",
-    membership: updatedMembership,
+    membership: result.updatedMembership,
   });
 };
 
@@ -605,21 +635,51 @@ export const addDayPass = async (
   const expiryDate = new Date(startDate);
   expiryDate.setDate(expiryDate.getDate() + 1);
 
-  const updatedMembership = await prisma.membership.update({
+  const membershipPrice = await prisma.membershipPrice.findUnique({
     where: {
-      id: membershipId,
+      gymId,
     },
-    data: {
-      status: "ACTIVE",
-      startDate,
-      expiryDate,
-      freezeStartDate: null,
-      frozenRemainingSeconds: null,
-    },
+  });
+
+  if (!membershipPrice) {
+    return res.status(400).json({
+      message: "Membership prices have not been set for this gym.",
+    });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMembership = await tx.membership.update({
+      where: {
+        id: membershipId,
+      },
+      data: {
+        status: "ACTIVE",
+        startDate,
+        expiryDate,
+        freezeStartDate: null,
+        frozenRemainingSeconds: null,
+      },
+    });
+
+    const transaction = await tx.transaction.create({
+      data: {
+        memberId: membership.userId,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "day-pass",
+        transactionDate: now,
+        startDate,
+        endDate: expiryDate,
+        amountPaid: membershipPrice.dayPass,
+        profit: membershipPrice.dayPass,
+      },
+    });
+
+    return { updatedMembership, transaction };
   });
 
   return res.status(200).json({
     message: "Day pass added successfully.",
-    membership: updatedMembership,
+    membership: result.updatedMembership,
   });
 };
