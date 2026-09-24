@@ -13,7 +13,9 @@ function useManageMember(
   const [editStartDate, setEditStartDate] = useState("");
   const [editExpiryDate, setEditExpiryDate] = useState("");
   const [editAction, setEditAction] = useState("");
+  const [memberToDelete, setMemberToDelete] = useState<number | null>(null);
   const [manageMemberError, setManageMemberError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [retrievedCredentials, setRetrievedCredentials] = useState<{
     userId: number;
     username: string;
@@ -495,6 +497,50 @@ function useManageMember(
     }
   };
 
+  const requestDeleteMember = (memberId: number) => {
+    setMemberToDelete(memberId);
+  };
+
+  const cancelDeleteMember = () => {
+    setMemberToDelete(null);
+  };
+
+  const deleteMember = async (memberId: number) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/members/${memberId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete member.");
+      }
+
+      setMembers((currentMembers) =>
+        currentMembers.filter((member) => member.user.id !== memberId),
+      );
+
+      setMemberToDelete(null);
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return {
     selectedMemberId,
     retrievedCredentials,
@@ -522,6 +568,11 @@ function useManageMember(
     openManageMember,
     manageMemberError,
     retrieveCredentials,
+    deleteMember,
+    requestDeleteMember,
+    memberToDelete,
+    cancelDeleteMember,
+    isDeleting,
   };
 }
 

@@ -12,6 +12,7 @@ import MemberDashboard from "./components/MemberDashboard/MemberDashboard";
 import useLogin from "./hooks/useLogin";
 import useCurrentTime from "./hooks/useCurrentTime";
 import useMembership from "./hooks/useMembership";
+import ConfirmModal from "./components/ConfirmModal/ConfirmModal";
 
 function App() {
   const currentTime = useCurrentTime();
@@ -24,6 +25,10 @@ function App() {
     message,
     user,
     handleLogin,
+    handleLogout,
+    requestLogout,
+    cancelLogout,
+    showLogoutConfirm,
   } = useLogin();
 
   const { members, setMembers, fetchMembers } = useMembers(user?.role);
@@ -60,6 +65,7 @@ function App() {
     closeManageMember,
     handleApplyChanges,
     openManageMember,
+    deleteMember,
     retrieveCredentials,
     retrievedCredentials,
     clearRetrievedCredentials,
@@ -81,6 +87,11 @@ function App() {
 
     selectedMember,
     manageMemberError,
+
+    requestDeleteMember,
+    memberToDelete,
+    cancelDeleteMember,
+    isDeleting,
   } = useManageMember(members, setMembers);
 
   const { membership } = useMembership(user?.id, user?.role);
@@ -92,12 +103,28 @@ function App() {
   if (user) {
     if (user.role === "MEMBER") {
       return (
-        <MemberDashboard
-          firstName={user.firstName}
-          lastName={user.lastName}
-          membership={membership}
-          currentTime={currentTime}
-        />
+        <>
+          <MemberDashboard
+            firstName={user.firstName}
+            lastName={user.lastName}
+            membership={membership}
+            currentTime={currentTime}
+            onLogout={requestLogout}
+          />
+
+          {showLogoutConfirm && (
+            <ConfirmModal
+              title="Logout"
+              memberName={`${user.firstName} ${user.lastName}`}
+              memberId={user.id}
+              message="Are you sure you want to logout?"
+              isLoading={false}
+              confirmLabel="Logout"
+              onConfirm={handleLogout}
+              onCancel={cancelLogout}
+            />
+          )}
+        </>
       );
     }
     return (
@@ -105,6 +132,7 @@ function App() {
         firstName={user?.firstName || ""}
         lastName={user?.lastName || ""}
         gymName={user?.managedGym?.name || ""}
+        onLogout={requestLogout}
       >
         {user.role === "ADMIN" && (
           <section>
@@ -166,7 +194,27 @@ function App() {
               onAddMember={() => setAddMember(true)}
               onManageMember={openManageMember}
               onRetrieveCredentials={retrieveCredentials}
+              onDeleteMember={requestDeleteMember}
             />
+
+            {memberToDelete !== null && (
+              <ConfirmModal
+                title="Delete Member"
+                memberName={`${
+                  members.find((member) => member.user?.id === memberToDelete)
+                    ?.user?.firstName
+                } ${
+                  members.find((member) => member.user?.id === memberToDelete)
+                    ?.user?.lastName
+                }`}
+                memberId={memberToDelete}
+                message="Are you sure you want to delete this user? This action cannot be undone."
+                isLoading={isDeleting}
+                confirmLabel="Delete"
+                onConfirm={() => deleteMember(memberToDelete)}
+                onCancel={cancelDeleteMember}
+              />
+            )}
           </section>
         )}
 
@@ -191,6 +239,19 @@ function App() {
             onActionChange={setEditAction}
             onApply={handleApplyChanges}
             onClose={closeManageMember}
+          />
+        )}
+
+        {showLogoutConfirm && (
+          <ConfirmModal
+            title="Logout"
+            memberName={`${user.firstName} ${user.lastName}`}
+            memberId={user.id}
+            message="Are you sure you want to logout?"
+            isLoading={false}
+            confirmLabel="Logout"
+            onConfirm={handleLogout}
+            onCancel={cancelLogout}
           />
         )}
       </AdminDashboard>

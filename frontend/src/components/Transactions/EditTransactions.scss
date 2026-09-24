@@ -1,0 +1,49 @@
+.edit-transaction {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+
+  z-index: 1001;
+}
+
+.transaction-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.transaction-edit-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.transaction-edit-fields input,
+.transaction-edit-fields select {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 10px 12px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  font: inherit;
+  color: #0f172a;
+  outline: none;
+}
+
+.transaction-edit-fields input:focus,
+.transaction-edit-fields select:focus {
+  border-color: #64748b;
+}

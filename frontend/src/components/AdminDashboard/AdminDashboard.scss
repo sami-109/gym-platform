@@ -36,3 +36,42 @@
 .members-header button:hover {
   opacity: 0.9;
 }
+
+.profile-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-actions {
+  margin-left: auto;
+}
+
+.profile-actions button {
+  padding: 9px 16px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.profile-actions button:hover {
+  background: #1e293b;
+}
+
+.dashboard-content {
+  display: flex;
+  min-height: calc(100vh - 80px);
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 24px;
+}

@@ -93,3 +93,28 @@ tbody tr.member-row-expired {
 tbody tr.member-row-expired td {
   color: #b91c1c;
 }
+
+.member-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.member-actions button:last-child {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.member-actions button:last-child:hover {
+  background: #b91c1c;
+}
+
+.member-actions button:first-child {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.member-actions button:first-child:hover {
+  background: #1d4ed8;
+}

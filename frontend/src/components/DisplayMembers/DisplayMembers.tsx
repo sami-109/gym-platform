@@ -9,6 +9,7 @@ type DisplayMembersProps = {
   onAddMember: () => void;
   onManageMember: (memberId: number) => void;
   onRetrieveCredentials: (memberId: number) => Promise<void>;
+  onDeleteMember: (memberId: number) => void;
 };
 
 function DisplayMembers({
@@ -17,6 +18,7 @@ function DisplayMembers({
   onAddMember,
   onManageMember,
   onRetrieveCredentials,
+  onDeleteMember,
 }: DisplayMembersProps) {
   return (
     <section>
@@ -78,13 +80,19 @@ function DisplayMembers({
               </td>
 
               <td>
-                <button onClick={() => onManageMember(member.id)}>
-                  Manage
-                </button>
+                <div className="member-actions">
+                  <button onClick={() => onManageMember(member.id)}>
+                    Manage
+                  </button>
 
-                <button onClick={() => onRetrieveCredentials(member.user.id)}>
-                  Retrieve Credentials
-                </button>
+                  <button onClick={() => onRetrieveCredentials(member.user.id)}>
+                    Retrieve Credentials
+                  </button>
+
+                  <button onClick={() => onDeleteMember(member.user.id)}>
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

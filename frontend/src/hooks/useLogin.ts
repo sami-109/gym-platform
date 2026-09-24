@@ -6,6 +6,7 @@ function useLogin() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [user, setUser] = useState<User | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -53,6 +54,20 @@ function useLogin() {
     }
   };
 
+  const requestLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    setShowLogoutConfirm(false);
+  };
+
   return {
     username,
     setUsername,
@@ -61,6 +76,10 @@ function useLogin() {
     message,
     user,
     handleLogin,
+    handleLogout,
+    requestLogout,
+    cancelLogout,
+    showLogoutConfirm,
   };
 }
 

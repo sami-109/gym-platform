@@ -1,0 +1,246 @@
+.transactions {
+  padding: 24px;
+}
+
+.transactions-header {
+  margin-bottom: 20px;
+}
+
+.transactions-header h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.transactions-table-wrapper {
+  overflow-x: auto;
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.transactions-table th,
+.transactions-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.transactions-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+}
+
+.transactions-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.transactions-table th:last-child {
+  text-align: center;
+}
+
+.transactions-table td:last-child {
+  white-space: nowrap;
+}
+
+.transactions-table td:last-child button {
+  padding: 8px 12px;
+
+  border: none;
+  border-radius: 8px;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.transactions-table td:last-child button:first-child {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.transactions-table td:last-child button:last-child {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.transactions-table td:last-child button:hover {
+  opacity: 0.9;
+}
+
+.transactions-table td:nth-child(3) {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.transaction-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.transactions-total {
+  display: flex;
+  justify-content: flex-end;
+
+  padding: 20px 16px;
+
+  color: #0f172a;
+}
+
+.membership-prices {
+  margin-top: 20px;
+  padding: 20px;
+
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.membership-prices h3 {
+  margin: 0 0 16px;
+
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.membership-prices-list {
+  display: flex;
+  gap: 32px;
+}
+
+.membership-prices-list div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.membership-prices-list span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.membership-prices-list strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.membership-prices-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.membership-prices-title button {
+  padding: 8px 14px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.membership-prices-title button:hover {
+  opacity: 0.9;
+}
+
+.transaction-filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-bottom: 12px;
+}
+
+.transaction-filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.transaction-filters .react-datepicker-wrapper {
+  width: auto;
+}
+
+.transaction-filters input {
+  width: 130px;
+  box-sizing: border-box;
+
+  padding: 9px 12px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #0f172a;
+
+  font: inherit;
+  outline: none;
+}
+
+.transaction-filters input:focus {
+  border-color: #64748b;
+}
+
+.transaction-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.transaction-filters button {
+  padding: 9px 16px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #334155;
+
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.transaction-filters button:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.transaction-filters button:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 2px;
+}
+
+.transaction-filters button.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.transaction-filters button.active:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+}
