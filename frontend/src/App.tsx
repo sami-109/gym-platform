@@ -13,6 +13,8 @@ import useLogin from "./hooks/useLogin";
 import useCurrentTime from "./hooks/useCurrentTime";
 import useMembership from "./hooks/useMembership";
 import ConfirmModal from "./components/ConfirmModal/ConfirmModal";
+import ActivityLog from "./components/ActivityLog/ActivityLog";
+import Loading from "./components/Loading/Loading";
 
 function App() {
   const currentTime = useCurrentTime();
@@ -29,9 +31,15 @@ function App() {
     requestLogout,
     cancelLogout,
     showLogoutConfirm,
+    loggingIn,
   } = useLogin();
 
-  const { members, setMembers, fetchMembers } = useMembers(user?.role);
+  const {
+    members,
+    setMembers,
+    fetchMembers,
+    loading: membersLoading,
+  } = useMembers(user?.role);
 
   const {
     creatingMember,
@@ -58,6 +66,7 @@ function App() {
     newMemberMembershipType,
     setNewMemberMembershipType,
     createdMemberMembershipType,
+    setCreateMemberError,
   } = useCreateMember(fetchMembers);
 
   const {
@@ -87,11 +96,13 @@ function App() {
 
     selectedMember,
     manageMemberError,
+    isRetrievingCredentials,
 
     requestDeleteMember,
     memberToDelete,
     cancelDeleteMember,
     isDeleting,
+    applyingChanges,
   } = useManageMember(members, setMembers);
 
   const { membership } = useMembership(user?.id, user?.role);
@@ -170,6 +181,7 @@ function App() {
                 onClose={() => {
                   setMemberCreated(false);
                   setAddMember(false);
+                  setCreateMemberError("");
                 }}
               />
             )}
@@ -188,14 +200,20 @@ function App() {
               />
             )}
 
-            <DisplayMembers
-              members={members}
-              currentTime={currentTime}
-              onAddMember={() => setAddMember(true)}
-              onManageMember={openManageMember}
-              onRetrieveCredentials={retrieveCredentials}
-              onDeleteMember={requestDeleteMember}
-            />
+            {membersLoading ? (
+              <Loading message="Retrieving member info..." />
+            ) : (
+              <DisplayMembers
+                members={members}
+                currentTime={currentTime}
+                onAddMember={() => {
+                  setCreateMemberError("");
+                  setAddMember(true);
+                }}
+                onManageMember={openManageMember}
+                onDeleteMember={requestDeleteMember}
+              />
+            )}
 
             {memberToDelete !== null && (
               <ConfirmModal
@@ -210,6 +228,7 @@ function App() {
                 memberId={memberToDelete}
                 message="Are you sure you want to delete this user? This action cannot be undone."
                 isLoading={isDeleting}
+                isLoadingMessage="Deleting member..."
                 confirmLabel="Delete"
                 onConfirm={() => deleteMember(memberToDelete)}
                 onCancel={cancelDeleteMember}
@@ -221,10 +240,12 @@ function App() {
         {selectedMemberId !== null && selectedMember && (
           <ManageMember
             member={selectedMember}
+            isRetrievingCredentials={isRetrievingCredentials}
             currentTime={currentTime}
             firstName={editFirstName}
             lastName={editLastName}
             phone={editPhone}
+            applyingChanges={applyingChanges}
             email={editEmail}
             error={manageMemberError}
             startDate={editStartDate}
@@ -239,6 +260,7 @@ function App() {
             onActionChange={setEditAction}
             onApply={handleApplyChanges}
             onClose={closeManageMember}
+            onRetrieveCredentials={retrieveCredentials}
           />
         )}
 
@@ -263,6 +285,7 @@ function App() {
       username={username}
       password={password}
       message={message}
+      loggingIn={loggingIn}
       onUsernameChange={setUsername}
       onPasswordChange={setPassword}
       onLogin={handleLogin}

@@ -1,6 +1,8 @@
 import { useState } from "react";
 
-function useCreateMember(fetchMembers: () => Promise<void>) {
+function useCreateMember(
+  fetchMembers: (showLoading?: boolean) => Promise<void>,
+) {
   const [creatingMember, setCreatingMember] = useState(false);
   const [newMemberFirstName, setNewMemberFirstName] = useState("");
   const [newMemberLastName, setNewMemberLastName] = useState("");
@@ -27,45 +29,45 @@ function useCreateMember(fetchMembers: () => Promise<void>) {
       return;
     }
 
+    setCreateMemberError("");
+
     setCreatingMember(true);
 
-    try {
-      const response = await fetch("http://localhost:3000/api/members/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          firstName: newMemberFirstName,
-          lastName: newMemberLastName,
-          phone: newMemberPhone,
-          email: newMemberEmail || undefined,
-          membershipType: newMemberMembershipType,
-        }),
-      });
+    const response = await fetch("http://localhost:3000/api/members/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        firstName: newMemberFirstName,
+        lastName: newMemberLastName,
+        phone: newMemberPhone,
+        email: newMemberEmail || undefined,
+        membershipType: newMemberMembershipType,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        setCreateMemberError(data.message || "Something went wrong.");
-        return;
-      }
-
-      return {
-        memberId: data.credentials.userId,
-        memberName: `${newMemberFirstName} ${newMemberLastName}`,
-        memberPhone: newMemberPhone,
-        memberEmail: newMemberEmail,
-        username: data.credentials.username,
-        password: data.credentials.password,
-      };
-    } finally {
-      setCreatingMember(false);
+    if (!response.ok) {
+      setCreateMemberError(data.message || "Something went wrong.");
+      return;
     }
+
+    return {
+      memberId: data.credentials.userId,
+      memberName: `${newMemberFirstName} ${newMemberLastName}`,
+      memberPhone: newMemberPhone,
+      memberEmail: newMemberEmail,
+      username: data.credentials.username,
+      password: data.credentials.password,
+    };
   };
 
   const handleCreateMember = async () => {
+    setCreatingMember(true);
+
     try {
       const result = await createMember();
 
@@ -73,7 +75,9 @@ function useCreateMember(fetchMembers: () => Promise<void>) {
         return;
       }
 
-      await fetchMembers();
+      setCreateMemberError("");
+
+      await fetchMembers(false);
 
       setCreatedMemberId(result.memberId);
       setCreatedMemberName(result.memberName);
@@ -91,7 +95,10 @@ function useCreateMember(fetchMembers: () => Promise<void>) {
       setNewMemberLastName("");
       setNewMemberPhone("");
       setNewMemberEmail("");
-    } catch (error) {}
+    } catch (error) {
+    } finally {
+      setCreatingMember(false);
+    }
   };
 
   return {
@@ -119,6 +126,7 @@ function useCreateMember(fetchMembers: () => Promise<void>) {
     newMemberMembershipType,
     setNewMemberMembershipType,
     createdMemberMembershipType,
+    setCreateMemberError,
   };
 }
 

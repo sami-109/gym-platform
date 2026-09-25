@@ -45,3 +45,50 @@ input:disabled {
   cursor: not-allowed;
   opacity: 1;
 }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+.retrieve-credentials-button {
+  flex-shrink: 0;
+
+  padding: 8px 12px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: #0f172a;
+  color: #ffffff;
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.retrieve-credentials-button:hover {
+  opacity: 0.9;
+}
+
+.manage-member-modal {
+  position: relative;
+  z-index: 100;
+}
+
+.manage-member-modal + .modal-backdrop {
+  z-index: 200;
+}
+
+.confirm-modal-backdrop {
+  z-index: 200;
+}

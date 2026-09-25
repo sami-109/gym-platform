@@ -1,9 +1,11 @@
 import "./Login.scss";
+import Loading from "../Loading/Loading";
 
 type LoginProps = {
   username: string;
   password: string;
   message: string;
+  loggingIn: boolean;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onLogin: (event: React.SyntheticEvent<HTMLFormElement>) => void;
@@ -13,6 +15,7 @@ function Login({
   username,
   password,
   message,
+  loggingIn,
   onUsernameChange,
   onPasswordChange,
   onLogin,
@@ -24,35 +27,41 @@ function Login({
 
         <p className="auth-subtitle">Login to your account</p>
 
-        <form onSubmit={onLogin}>
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
+        {loggingIn ? (
+          <Loading message="Logging in..." />
+        ) : (
+          <>
+            <form onSubmit={onLogin}>
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
 
-            <input
-              type="text"
-              id="username"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(event) => onUsernameChange(event.target.value)}
-            />
-          </div>
+                <input
+                  type="text"
+                  id="username"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(event) => onUsernameChange(event.target.value)}
+                />
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
 
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(event) => onPasswordChange(event.target.value)}
-            />
-          </div>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => onPasswordChange(event.target.value)}
+                />
+              </div>
 
-          <button type="submit">Login</button>
-        </form>
+              <button type="submit">Login</button>
+            </form>
 
-        {message && <p>{message}</p>}
+            {message && <p>{message}</p>}
+          </>
+        )}
       </section>
     </main>
   );

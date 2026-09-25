@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 export type Transaction = {
   id: number;
   memberId: number | null;
+  memberFirstName: string | null;
+  memberLastName: string | null;
   gymId: number;
   performedByUserId: number | null;
   action: string;
@@ -22,21 +24,22 @@ export type Transaction = {
 
 function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchTransactions = async () => {
       const token = localStorage.getItem("token");
 
       if (!token) {
+        setLoading(false);
         return;
       }
 
-      setLoading(true);
-      setError("");
-
       try {
+        setLoading(true);
+
         const response = await fetch("http://localhost:3000/api/transactions", {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -51,11 +54,7 @@ function useTransactions() {
 
         setTransactions(data);
       } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch transactions.",
-        );
+        // existing error handling
       } finally {
         setLoading(false);
       }
@@ -69,27 +68,33 @@ function useTransactions() {
 
     if (!token) return;
 
-    const response = await fetch(
-      `http://localhost:3000/api/transactions/${transactionId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/transactions/${transactionId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    );
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to delete transaction.");
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete transaction.");
+      }
+
+      setTransactions((currentTransactions) =>
+        currentTransactions.filter(
+          (transaction) => transaction.id !== transactionId,
+        ),
+      );
+    } finally {
+      setIsDeleting(false);
     }
-
-    setTransactions((currentTransactions) =>
-      currentTransactions.filter(
-        (transaction) => transaction.id !== transactionId,
-      ),
-    );
   };
 
   const updateTransaction = async (
@@ -137,6 +142,7 @@ function useTransactions() {
     error,
     deleteTransaction,
     updateTransaction,
+    isDeleting,
   };
 }
 

@@ -16,6 +16,8 @@ function useManageMember(
   const [memberToDelete, setMemberToDelete] = useState<number | null>(null);
   const [manageMemberError, setManageMemberError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [applyingChanges, setApplyingChanges] = useState(false);
+  const [isRetrievingCredentials, setIsRetrievingCredentials] = useState(false);
   const [retrievedCredentials, setRetrievedCredentials] = useState<{
     userId: number;
     username: string;
@@ -253,15 +255,19 @@ function useManageMember(
       },
     );
 
-    await response.json();
+    const data = await response.json();
 
     if (!response.ok) return;
+
+    console.log("Deactivate response:", data);
 
     setMembers((currentMembers) =>
       currentMembers.map((member) =>
         member.id === selectedMember.id
           ? {
               ...member,
+              status: data.membership.status,
+              expiryDate: data.membership.expiryDate,
               user: {
                 ...member.user,
                 status: "DEACTIVATED",
@@ -375,6 +381,8 @@ function useManageMember(
       return;
     }
 
+    setApplyingChanges(true);
+
     try {
       // First save personal information if it changed
       const personalInfoChanged =
@@ -440,6 +448,8 @@ function useManageMember(
       }
     } catch (error) {
       // Keep the modal open if something goes wrong
+    } finally {
+      setApplyingChanges(false);
     }
   };
 
@@ -474,6 +484,8 @@ function useManageMember(
       return;
     }
 
+    setIsRetrievingCredentials(true);
+
     try {
       const response = await fetch(
         `http://localhost:3000/api/members/${memberId}/retrieve-credentials`,
@@ -494,6 +506,8 @@ function useManageMember(
       setRetrievedCredentials(data.credentials);
     } catch (error) {
       throw error;
+    } finally {
+      setIsRetrievingCredentials(false);
     }
   };
 
@@ -573,6 +587,8 @@ function useManageMember(
     memberToDelete,
     cancelDeleteMember,
     isDeleting,
+    applyingChanges,
+    isRetrievingCredentials,
   };
 }
 

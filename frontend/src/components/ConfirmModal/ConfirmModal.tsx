@@ -1,11 +1,13 @@
 import "../../styles/_modal.scss";
 import "./ConfirmModal.scss";
+import Loading from "../Loading/Loading";
 
 type ConfirmModalProps = {
   title: string;
   memberName: string;
   memberId: number;
   isLoading: boolean;
+  isLoadingMessage?: string;
   message: string;
   confirmLabel: string;
   onConfirm: () => void;
@@ -18,40 +20,47 @@ function ConfirmModal({
   memberId,
   message,
   isLoading,
+  isLoadingMessage = "Loading...",
   confirmLabel,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
   return (
-    <div className="modal-backdrop">
+    <div className="modal-backdrop confirm-modal-backdrop">
       <section className="confirm-modal">
-        <button type="button" className="modal-close" onClick={onCancel}>
-          ×
-        </button>
+        {isLoading ? (
+          <Loading message={isLoadingMessage} />
+        ) : (
+          <>
+            <button type="button" className="modal-close" onClick={onCancel}>
+              ×
+            </button>
 
-        <div className="modal-header">
-          <h2>{title}</h2>
+            <div className="modal-header">
+              <h2>{title}</h2>
 
-          <p>
-            <strong>Name:</strong> {memberName}
-          </p>
+              <p>
+                <strong>Name:</strong> {memberName}
+              </p>
 
-          <p>
-            <strong>ID:</strong> {memberId}
-          </p>
+              <p>
+                <strong>ID:</strong> {memberId}
+              </p>
 
-          <p className="confirm-message">{message}</p>
-        </div>
+              <p className="confirm-message">{message}</p>
+            </div>
 
-        <div className="modal-actions">
-          <button type="button" onClick={onCancel}>
-            Cancel
-          </button>
+            <div className="modal-actions">
+              <button type="button" onClick={onCancel}>
+                Cancel
+              </button>
 
-          <button type="button" onClick={onConfirm} disabled={isLoading}>
-            {isLoading ? "Loading..." : confirmLabel}
-          </button>
-        </div>
+              <button type="button" onClick={onConfirm}>
+                {confirmLabel}
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

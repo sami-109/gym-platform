@@ -1,6 +1,7 @@
 import "../../styles/_modal.scss";
 import "./MemberCredentials.scss";
 import { formatPhone } from "../../utils/phone";
+import { createPortal } from "react-dom";
 
 type MemberCredentialsProps = {
   memberId: number | null;
@@ -33,8 +34,8 @@ function MemberCredentials({
         "day-pass": "Day Pass",
       }[membershipType] || membershipType
     : "";
-  return (
-    <div className="modal-backdrop">
+  return createPortal(
+    <div className="modal-backdrop member-credentials-backdrop">
       <div className="manage-member-modal">
         <button type="button" className="modal-close" onClick={onClose}>
           ×
@@ -93,7 +94,8 @@ function MemberCredentials({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

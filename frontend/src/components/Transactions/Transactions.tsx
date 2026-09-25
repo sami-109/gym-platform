@@ -8,9 +8,16 @@ import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import "react-datepicker/dist/react-datepicker.css";
 import EditTransaction from "./EditTransaction";
 import CustomDate from "../../components/Transactions/CustomDate";
+import Loading from "../Loading/Loading";
 function Transactions() {
-  const { transactions, loading, error, deleteTransaction, updateTransaction } =
-    useTransactions();
+  const {
+    transactions,
+    loading,
+    error,
+    deleteTransaction,
+    updateTransaction,
+    isDeleting,
+  } = useTransactions();
   const [showPriceEditor, setShowPriceEditor] = useState(false);
   const [dayPass, setDayPass] = useState("");
   const [trial, setTrial] = useState("");
@@ -228,121 +235,129 @@ function Transactions() {
             </button>
           </div>
 
-          {pricesLoading && <p>Loading prices...</p>}
-
           {pricesError && <p>{pricesError}</p>}
 
           {prices && (
             <div className="membership-prices-list">
-              <div>
-                <span>Day Pass</span>
-                <strong>${Number(prices.dayPass).toFixed(2)}</strong>
-              </div>
+              <p>
+                <strong>Day Pass:</strong> ${prices.dayPass}
+              </p>
 
-              <div>
-                <span>Trial</span>
-                <strong>${Number(prices.trial).toFixed(2)}</strong>
-              </div>
+              <p>
+                <strong>Trial:</strong> ${prices.trial}
+              </p>
 
-              <div>
-                <span>1 Month</span>
-                <strong>${Number(prices.oneMonth).toFixed(2)}</strong>
-              </div>
+              <p>
+                <strong>1 Month:</strong> ${prices.oneMonth}
+              </p>
             </div>
           )}
         </div>
       </div>
 
-      {loading && <p>Loading transactions...</p>}
+      {loading || pricesLoading ? (
+        <Loading message="Retrieving transaction data..." />
+      ) : (
+        <>
+          {error && <p>{error}</p>}
 
-      {error && <p>{error}</p>}
+          <div className="transaction-filters">
+            <button
+              type="button"
+              className={dateFilter === "1-day" ? "active" : ""}
+              onClick={() => setDateFilter("1-day")}
+            >
+              1 Day
+            </button>
 
-      <div className="transaction-filters">
-        <button
-          type="button"
-          className={dateFilter === "1-day" ? "active" : ""}
-          onClick={() => setDateFilter("1-day")}
-        >
-          1 Day
-        </button>
+            <button
+              type="button"
+              className={dateFilter === "1-week" ? "active" : ""}
+              onClick={() => setDateFilter("1-week")}
+            >
+              1 Week
+            </button>
 
-        <button
-          type="button"
-          className={dateFilter === "1-week" ? "active" : ""}
-          onClick={() => setDateFilter("1-week")}
-        >
-          1 Week
-        </button>
+            <button
+              type="button"
+              className={dateFilter === "1-month" ? "active" : ""}
+              onClick={() => setDateFilter("1-month")}
+            >
+              1 Month
+            </button>
 
-        <button
-          type="button"
-          className={dateFilter === "1-month" ? "active" : ""}
-          onClick={() => setDateFilter("1-month")}
-        >
-          1 Month
-        </button>
+            <button
+              type="button"
+              className={dateFilter === "custom" ? "active" : ""}
+              onClick={() => {
+                setDateFilter("custom");
+                setShowCustomDate(true);
+              }}
+            >
+              Custom Date
+            </button>
+          </div>
 
-        <button
-          type="button"
-          className={dateFilter === "custom" ? "active" : ""}
-          onClick={() => {
-            setDateFilter("custom");
-            setShowCustomDate(true);
-          }}
-        >
-          Custom Date
-        </button>
-      </div>
+          {!loading && !error && (
+            <p>{filteredTransactions.length} transaction(s)</p>
+          )}
 
-      {!loading && !error && (
-        <p>{filteredTransactions.length} transaction(s)</p>
-      )}
+          <div className="transactions-table-wrapper">
+            <table className="transactions-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Action</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
 
-      <div className="transactions-table-wrapper">
-        <table className="transactions-table">
-          <thead>
-            <tr>
-              <th>Member</th>
-              <th>Action</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredTransactions.map((transaction) => (
-              <TransactionRow
-                key={transaction.id}
-                member={
-                  transaction.member
-                    ? `${transaction.member.firstName} ${transaction.member.lastName}`
-                    : "Deleted member"
-                }
-                action={
-                  transaction.action === "trial"
-                    ? "Trial"
-                    : transaction.action === "day-pass"
-                      ? "Day Pass"
-                      : transaction.action === "1-month"
-                        ? "1 Month"
-                        : transaction.action
-                }
-                amount={Number(transaction.amountPaid)}
-                date={new Date(transaction.transactionDate).toLocaleDateString(
-                  "en-GB",
+              <tbody>
+                {filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>No transactions</td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((transaction) => (
+                    <TransactionRow
+                      key={transaction.id}
+                      member={
+                        transaction.member
+                          ? `${transaction.member.firstName} ${transaction.member.lastName}`
+                          : transaction.memberFirstName &&
+                              transaction.memberLastName
+                            ? `${transaction.memberFirstName} ${transaction.memberLastName}`
+                            : "Deleted member"
+                      }
+                      action={
+                        transaction.action === "trial"
+                          ? "Trial"
+                          : transaction.action === "day-pass"
+                            ? "Day Pass"
+                            : transaction.action === "1-month"
+                              ? "1 Month"
+                              : transaction.action
+                      }
+                      amount={Number(transaction.amountPaid)}
+                      date={new Date(
+                        transaction.transactionDate,
+                      ).toLocaleDateString("en-GB")}
+                      onEdit={() => openEditTransaction(transaction.id)}
+                      onDelete={() => requestDeleteTransaction(transaction.id)}
+                    />
+                  ))
                 )}
-                onEdit={() => openEditTransaction(transaction.id)}
-                onDelete={() => requestDeleteTransaction(transaction.id)}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
 
-      <div className="transactions-total">
-        <strong>Total: ${total.toFixed(2)}</strong>
-      </div>
+          <div className="transactions-total">
+            <strong>Total: ${total.toFixed(2)}</strong>
+          </div>
+        </>
+      )}
 
       {showPriceEditor && prices && (
         <EditMembershipPrices
@@ -378,7 +393,8 @@ function Transactions() {
           }
           memberId={transactionToDelete}
           message="Are you sure you want to delete this transaction? This action cannot be undone."
-          isLoading={false}
+          isLoading={isDeleting}
+          isLoadingMessage="Deleting transaction..."
           confirmLabel="Delete"
           onConfirm={confirmDeleteTransaction}
           onCancel={cancelDeleteTransaction}

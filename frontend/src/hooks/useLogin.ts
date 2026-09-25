@@ -7,11 +7,13 @@ function useLogin() {
   const [message, setMessage] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const handleLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     setMessage("");
+    setLoggingIn(true);
 
     try {
       const response = await fetch("http://localhost:3000/api/auth/login", {
@@ -51,6 +53,8 @@ function useLogin() {
       setMessage("Login successful!");
     } catch {
       setMessage("Could not connect to the server.");
+    } finally {
+      setLoggingIn(false);
     }
   };
 
@@ -76,6 +80,7 @@ function useLogin() {
     message,
     user,
     handleLogin,
+    loggingIn,
     handleLogout,
     requestLogout,
     cancelLogout,

@@ -1,12 +1,162 @@
 .activity-log {
-  padding: 24px;
+  width: 100%;
 }
 
-.activity-log h2 {
-  margin: 0 0 8px;
+.activity-log-header {
+  margin-bottom: 20px;
+
+  h2 {
+    margin: 0;
+  }
 }
 
-.activity-log p {
-  margin: 0;
-  color: #64748b;
+.activity-log table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.activity-log th,
+.activity-log td {
+  padding: 14px 20px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+.activity-log th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.activity-log td {
+  line-height: 1.4;
+}
+
+/* Column widths */
+.activity-log th:nth-child(1),
+.activity-log td:nth-child(1) {
+  width: 20%;
+}
+
+.activity-log th:nth-child(2),
+.activity-log td:nth-child(2) {
+  width: 25%;
+}
+
+.activity-log th:nth-child(3),
+.activity-log td:nth-child(3) {
+  width: 20%;
+}
+
+.activity-log th:nth-child(4),
+.activity-log td:nth-child(4) {
+  width: 15%;
+}
+
+.activity-log th:nth-child(5),
+.activity-log td:nth-child(5) {
+  width: 20%;
+}
+
+/* Action buttons */
+.activity-log .action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.activity-log .delete-button {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+}
+
+.activity-log .delete-button:hover {
+  background-color: #bb2d3b;
+}
+
+.activity-log-modal {
+  position: relative;
+  z-index: 100;
+
+  width: 520px;
+  max-width: 90vw;
+
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+.activity-log-modal .form-section {
+  margin-bottom: 0;
+}
+
+.activity-log-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+
+.activity-log-modal input,
+.activity-log-modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.activity-log-modal textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.activity-log-modal .modal-actions {
+  margin-top: 24px;
+}
+
+.activity-log-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.activity-log-filters button {
+  padding: 9px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.activity-log-filters button:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.activity-log-filters button:focus-visible {
+  outline: 2px solid #64748b;
+  outline-offset: 2px;
+}
+
+.activity-log-filters button.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.activity-log-filters button.active:hover {
+  background: #1e293b;
+  border-color: #1e293b;
 }

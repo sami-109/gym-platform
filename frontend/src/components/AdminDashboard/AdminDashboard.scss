@@ -3,6 +3,18 @@
   padding: 24px;
 }
 
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 24px;
+  padding: 16px 20px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .members-header {
   display: flex;
   align-items: center;
@@ -68,7 +80,10 @@
 
 .dashboard-content {
   display: flex;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 140px);
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .dashboard-main {
