@@ -66,6 +66,8 @@ model Membership {
 model Transaction {
   id                Int      @id @default(autoincrement())
   memberId          Int?
+  memberFirstName String?
+  memberLastName  String?
   gymId             Int
   performedByUserId Int?
   action            String
@@ -85,6 +87,8 @@ model Transaction {
 model ActivityLog {
   id                Int      @id @default(autoincrement())
   memberId          Int?
+  memberFirstName   String?
+  memberLastName    String?
   gymId             Int?
   performedByUserId Int?
   action            String

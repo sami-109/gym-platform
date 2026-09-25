@@ -160,6 +160,8 @@ export const createMember = async (req: Request, res: Response) => {
     const transaction = await tx.transaction.create({
       data: {
         memberId: member.id,
+        memberFirstName: member.firstName,
+        memberLastName: member.lastName,
         gymId: gym.id,
         performedByUserId: req.user!.userId,
         action: membershipType,
@@ -171,7 +173,19 @@ export const createMember = async (req: Request, res: Response) => {
       },
     });
 
-    return { member, membership, transaction };
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: member.id,
+        memberFirstName: member.firstName,
+        memberLastName: member.lastName,
+        gymId: gym.id,
+        performedByUserId: req.user!.userId,
+        action: membershipType,
+        details: `Created member ${member.firstName} ${member.lastName}.`,
+      },
+    });
+
+    return { member, membership, transaction, activityLog };
   });
 
   return res.status(201).json({
@@ -340,23 +354,54 @@ export const deactivateMember = async (req: Request, res: Response) => {
     });
   }
 
-  const updatedMember = await prisma.user.update({
-    where: {
-      id: memberId,
-    },
-    data: {
-      status: "DEACTIVATED",
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMember = await tx.user.update({
+      where: {
+        id: memberId,
+      },
+      data: {
+        status: "DEACTIVATED",
+      },
+    });
+
+    const updatedMembership = await tx.membership.update({
+      where: {
+        userId: memberId,
+      },
+      data: {
+        expiryDate: new Date(),
+        status: "EXPIRED",
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: memberId,
+        memberFirstName: member.firstName,
+        memberLastName: member.lastName,
+        gymId: updatedMembership.gymId,
+        performedByUserId: req.user!.userId,
+        action: "DEACTIVATED",
+        details: "Member deactivated.",
+      },
+    });
+
+    return { updatedMember, updatedMembership, activityLog };
   });
 
   return res.status(200).json({
     message: "Member deactivated successfully.",
     member: {
-      id: updatedMember.id,
-      firstName: updatedMember.firstName,
-      lastName: updatedMember.lastName,
-      username: updatedMember.username,
-      status: updatedMember.status,
+      id: result.updatedMember.id,
+      firstName: result.updatedMember.firstName,
+      lastName: result.updatedMember.lastName,
+      username: result.updatedMember.username,
+      status: result.updatedMember.status,
+    },
+    membership: {
+      status: result.updatedMembership.status,
+      startDate: result.updatedMembership.startDate,
+      expiryDate: result.updatedMembership.expiryDate,
     },
   });
 };
@@ -412,23 +457,51 @@ export const activateMember = async (req: Request, res: Response) => {
     });
   }
 
-  const updatedMember = await prisma.user.update({
+  const membership = await prisma.membership.findUnique({
     where: {
-      id: memberId,
+      userId: memberId,
     },
-    data: {
-      status: "ACTIVE",
-    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMember = await tx.user.update({
+      where: {
+        id: memberId,
+      },
+      data: {
+        status: "ACTIVE",
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: memberId,
+        memberFirstName: updatedMember.firstName,
+        memberLastName: updatedMember.lastName,
+        gymId: membership.gymId,
+        performedByUserId: req.user!.userId,
+        action: "ACTIVATED",
+        details: "Member activated.",
+      },
+    });
+
+    return { updatedMember, activityLog };
   });
 
   return res.status(200).json({
     message: "Member activated successfully.",
     member: {
-      id: updatedMember.id,
-      firstName: updatedMember.firstName,
-      lastName: updatedMember.lastName,
-      username: updatedMember.username,
-      status: updatedMember.status,
+      id: result.updatedMember.id,
+      firstName: result.updatedMember.firstName,
+      lastName: result.updatedMember.lastName,
+      username: result.updatedMember.username,
+      status: result.updatedMember.status,
     },
   });
 };
@@ -525,28 +598,56 @@ export const editMember = async (req: Request, res: Response) => {
     });
   }
 
-  const updatedMember = await prisma.user.update({
+  const membership = await prisma.membership.findUnique({
     where: {
-      id: memberId,
+      userId: memberId,
     },
-    data: {
-      firstName,
-      lastName,
-      phone,
-      email: email || null,
-    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMember = await tx.user.update({
+      where: {
+        id: memberId,
+      },
+      data: {
+        firstName,
+        lastName,
+        phone,
+        email: email || null,
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: memberId,
+        memberFirstName: updatedMember.firstName,
+        memberLastName: updatedMember.lastName,
+        gymId: membership.gymId,
+        performedByUserId: req.user!.userId,
+        action: "MEMBER_UPDATED",
+        details: "Member information updated.",
+      },
+    });
+
+    return { updatedMember, activityLog };
   });
 
   return res.status(200).json({
     message: "Member updated successfully.",
     member: {
-      id: updatedMember.id,
-      firstName: updatedMember.firstName,
-      lastName: updatedMember.lastName,
-      username: updatedMember.username,
-      phone: updatedMember.phone,
-      email: updatedMember.email,
-      status: updatedMember.status,
+      id: result.updatedMember.id,
+      firstName: result.updatedMember.firstName,
+      lastName: result.updatedMember.lastName,
+      username: result.updatedMember.username,
+      phone: result.updatedMember.phone,
+      email: result.updatedMember.email,
+      status: result.updatedMember.status,
     },
   });
 };
@@ -599,20 +700,48 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
   const newPassword = generateMemberPassword();
   const hashedPassword = await hashPassword(newPassword);
 
-  const updatedMember = await prisma.user.update({
+  const membership = await prisma.membership.findUnique({
     where: {
-      id: memberId,
+      userId: memberId,
     },
-    data: {
-      passwordHash: hashedPassword,
-    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMember = await tx.user.update({
+      where: {
+        id: memberId,
+      },
+      data: {
+        passwordHash: hashedPassword,
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: memberId,
+        memberFirstName: updatedMember.firstName,
+        memberLastName: updatedMember.lastName,
+        gymId: membership.gymId,
+        performedByUserId: req.user!.userId,
+        action: "CREDENTIALS_RETRIEVED",
+        details: "Member credentials retrieved.",
+      },
+    });
+
+    return { updatedMember, activityLog };
   });
 
   return res.status(200).json({
     message: "Credentials reset successfully.",
     credentials: {
-      userId: updatedMember.id,
-      username: updatedMember.username,
+      userId: result.updatedMember.id,
+      username: result.updatedMember.username,
       password: newPassword,
     },
   });
@@ -680,6 +809,8 @@ export const deleteMember = async (req: Request, res: Response) => {
     await tx.activityLog.create({
       data: {
         memberId: member.id,
+        memberFirstName: member.firstName,
+        memberLastName: member.lastName,
         gymId,
         performedByUserId: req.user!.userId,
         action: "MEMBER_DELETED",

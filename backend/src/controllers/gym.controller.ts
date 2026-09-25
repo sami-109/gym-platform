@@ -37,6 +37,14 @@ export const renewMembership = async (
       id: membershipId,
       gymId,
     },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
   });
 
   if (!membership) {
@@ -104,6 +112,8 @@ export const renewMembership = async (
     const transaction = await tx.transaction.create({
       data: {
         memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
         gymId,
         performedByUserId: req.user!.userId,
         action: "1-month",
@@ -115,7 +125,19 @@ export const renewMembership = async (
       },
     });
 
-    return { updatedMembership, transaction };
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "RENEWED",
+        details: "Membership renewed.",
+      },
+    });
+
+    return { updatedMembership, transaction, activityLog };
   });
 
   return res.status(200).json({
@@ -159,6 +181,14 @@ export const freezeMembership = async (
       id: membershipId,
       gymId,
     },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
   });
 
   if (!membership) {
@@ -185,22 +215,38 @@ export const freezeMembership = async (
     (membership.expiryDate.getTime() - now.getTime()) / 1000,
   );
 
-  const frozenMembership = await prisma.membership.update({
-    where: {
-      id: membershipId,
-    },
-    data: {
-      status: "FROZEN",
-      startDate: now,
-      freezeStartDate: now,
-      frozenRemainingSeconds: remainingSeconds,
-      expiryDate: null,
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const frozenMembership = await tx.membership.update({
+      where: {
+        id: membershipId,
+      },
+      data: {
+        status: "FROZEN",
+        startDate: now,
+        freezeStartDate: now,
+        frozenRemainingSeconds: remainingSeconds,
+        expiryDate: null,
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "FROZEN",
+        details: "Membership frozen.",
+      },
+    });
+
+    return { frozenMembership, activityLog };
   });
 
   return res.status(200).json({
     message: "Membership frozen successfully.",
-    membership: frozenMembership,
+    membership: result.frozenMembership,
   });
 };
 
@@ -239,6 +285,14 @@ export const resumeMembership = async (
       id: membershipId,
       gymId,
     },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
   });
 
   if (!membership) {
@@ -262,22 +316,38 @@ export const resumeMembership = async (
     now.getTime() + membership.frozenRemainingSeconds * 1000,
   );
 
-  const resumedMembership = await prisma.membership.update({
-    where: {
-      id: membershipId,
-    },
-    data: {
-      status: "ACTIVE",
-      startDate: now,
-      expiryDate: newExpiryDate,
-      freezeStartDate: null,
-      frozenRemainingSeconds: null,
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const resumedMembership = await tx.membership.update({
+      where: {
+        id: membershipId,
+      },
+      data: {
+        status: "ACTIVE",
+        startDate: now,
+        expiryDate: newExpiryDate,
+        freezeStartDate: null,
+        frozenRemainingSeconds: null,
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "RESUMED",
+        details: "Membership resumed.",
+      },
+    });
+
+    return { resumedMembership, activityLog };
   });
 
   return res.status(200).json({
     message: "Membership resumed successfully.",
-    membership: resumedMembership,
+    membership: result.resumedMembership,
   });
 };
 
@@ -508,6 +578,14 @@ export const adjustMembershipDates = async (
       id: membershipId,
       gymId,
     },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
   });
 
   if (!membership) {
@@ -551,20 +629,36 @@ export const adjustMembershipDates = async (
 
   const newStatus = newExpiryDate < new Date() ? "EXPIRED" : "ACTIVE";
 
-  const updatedMembership = await prisma.membership.update({
-    where: {
-      id: membershipId,
-    },
-    data: {
-      startDate: newStartDate,
-      expiryDate: newExpiryDate,
-      status: newStatus,
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMembership = await tx.membership.update({
+      where: {
+        id: membershipId,
+      },
+      data: {
+        startDate: newStartDate,
+        expiryDate: newExpiryDate,
+        status: newStatus,
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "DATES_ADJUSTED",
+        details: "Membership dates adjusted.",
+      },
+    });
+
+    return { updatedMembership, activityLog };
   });
 
   return res.status(200).json({
     message: "Membership dates adjusted successfully.",
-    membership: updatedMembership,
+    membership: result.updatedMembership,
   });
 };
 
@@ -602,6 +696,14 @@ export const addDayPass = async (
     where: {
       id: membershipId,
       gymId,
+    },
+    include: {
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 
@@ -664,6 +766,8 @@ export const addDayPass = async (
     const transaction = await tx.transaction.create({
       data: {
         memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
         gymId,
         performedByUserId: req.user!.userId,
         action: "day-pass",
@@ -675,7 +779,19 @@ export const addDayPass = async (
       },
     });
 
-    return { updatedMembership, transaction };
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: membership.userId,
+        memberFirstName: membership.user.firstName,
+        memberLastName: membership.user.lastName,
+        gymId,
+        performedByUserId: req.user!.userId,
+        action: "DAY_PASS",
+        details: "Day pass added.",
+      },
+    });
+
+    return { updatedMembership, transaction, activityLog };
   });
 
   return res.status(200).json({

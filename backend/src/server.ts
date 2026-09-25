@@ -9,6 +9,7 @@ import cors from "cors";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import membershipPriceRoutes from "./routes/membershipPrice.routes.js";
+import activityLogRoutes from "./routes/activityLog.routes.js";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/admins", adminRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/membership-prices", membershipPriceRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 
 app.use(errorMiddleware);
 
