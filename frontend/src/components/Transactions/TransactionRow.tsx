@@ -4,11 +4,13 @@ type TransactionRowProps = {
   member: string;
   action: string;
   amount: number;
+  id: number;
   onEdit: () => void;
   onDelete: () => void;
 };
 
 function TransactionRow({
+  id,
   date,
   member,
   action,
@@ -18,6 +20,7 @@ function TransactionRow({
 }: TransactionRowProps) {
   return (
     <tr>
+      <td>{id}</td>
       <td>{member}</td>
       <td>{action}</td>
       <td>${amount.toFixed(2)}</td>

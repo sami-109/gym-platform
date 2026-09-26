@@ -34,7 +34,11 @@ const ActivityLog = () => {
 
   const openEdit = (log: ActivityLogType) => {
     setEditingLog(log);
-    setEditDetails(log.details || getActivityDetailsDisplay(log.action));
+    setEditDetails(
+      log.details
+        ? formatActivityDetails(log.details)
+        : getActivityDetailsDisplay(log.action),
+    );
     setEditActivityDate(new Date(log.createdAt));
   };
 
@@ -54,6 +58,29 @@ const ActivityLog = () => {
     }
 
     setDeletingLog(null);
+  };
+
+  const formatActivityDetails = (details: string | null) => {
+    if (!details) {
+      return "";
+    }
+
+    return details.replace(
+      /Transaction date: ([^→]+) → ([^.\n]+)/,
+      (_, oldDate, newDate) => {
+        const formatDate = (dateString: string) => {
+          const date = new Date(dateString.trim());
+
+          if (Number.isNaN(date.getTime())) {
+            return dateString.trim();
+          }
+
+          return date.toLocaleDateString("en-GB");
+        };
+
+        return `Transaction date: ${formatDate(oldDate)} → ${formatDate(newDate)}`;
+      },
+    );
   };
 
   const getActivityActionDisplay = (action: string) => {
@@ -87,6 +114,15 @@ const ActivityLog = () => {
         return "Member Deleted";
       case "DAY_PASS":
         return "Day Pass";
+
+      case "TRANSACTION_CREATED":
+        return "Transaction Created";
+
+      case "TRANSACTION_UPDATED":
+        return "Transaction Updated";
+
+      case "TRANSACTION_DELETED":
+        return "Transaction Deleted";
 
       default:
         return action;
@@ -124,6 +160,15 @@ const ActivityLog = () => {
         return "Member deleted.";
       case "DAY_PASS":
         return "Day pass added.";
+
+      case "TRANSACTION_CREATED":
+        return "Transaction created.";
+
+      case "TRANSACTION_UPDATED":
+        return "Transaction updated.";
+
+      case "TRANSACTION_DELETED":
+        return "Transaction deleted.";
 
       default:
         return "";
@@ -279,7 +324,10 @@ const ActivityLog = () => {
       </div>
 
       {!loading && !error && (
-        <p>{filteredActivityLogs.length} activity log(s)</p>
+        <p>
+          {filteredActivityLogs.length}{" "}
+          {filteredActivityLogs.length === 1 ? "activity" : "activities"}
+        </p>
       )}
 
       {loading ? (

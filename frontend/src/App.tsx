@@ -24,6 +24,8 @@ function App() {
     setUsername,
     password,
     setPassword,
+    showPassword,
+    setShowPassword,
     message,
     user,
     handleLogin,
@@ -284,10 +286,12 @@ function App() {
     <Login
       username={username}
       password={password}
+      showPassword={showPassword}
       message={message}
       loggingIn={loggingIn}
       onUsernameChange={setUsername}
       onPasswordChange={setPassword}
+      onShowPasswordChange={setShowPassword}
       onLogin={handleLogin}
     />
   );

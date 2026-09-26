@@ -8,7 +8,7 @@ function useLogin() {
   const [user, setUser] = useState<User | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const handleLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -81,6 +81,8 @@ function useLogin() {
     user,
     handleLogin,
     loggingIn,
+    showPassword,
+    setShowPassword,
     handleLogout,
     requestLogout,
     cancelLogout,

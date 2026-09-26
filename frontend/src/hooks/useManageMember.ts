@@ -34,6 +34,7 @@ function useManageMember(
 
   const closeManageMember = () => {
     setSelectedMemberId(null);
+    setManageMemberError("");
   };
 
   const freezeMember = async () => {

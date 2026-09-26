@@ -12,9 +12,12 @@ export const loginMember = async (req: Request, res: Response) => {
     });
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.user.findFirst({
     where: {
-      username,
+      username: {
+        equals: username,
+        mode: "insensitive",
+      },
     },
   });
 

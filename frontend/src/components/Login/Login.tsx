@@ -1,24 +1,29 @@
 import "./Login.scss";
 import Loading from "../Loading/Loading";
+import { Eye, EyeOff } from "lucide-react";
 
 type LoginProps = {
   username: string;
   password: string;
+  showPassword: boolean;
   message: string;
   loggingIn: boolean;
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onShowPasswordChange: (value: boolean) => void;
   onLogin: (event: React.SyntheticEvent<HTMLFormElement>) => void;
 };
 
 function Login({
   username,
   password,
+  showPassword,
   message,
   loggingIn,
   onUsernameChange,
   onPasswordChange,
   onLogin,
+  onShowPasswordChange,
 }: LoginProps) {
   return (
     <main className="auth-page">
@@ -47,13 +52,23 @@ function Login({
               <div className="form-group">
                 <label htmlFor="password">Password</label>
 
-                <input
-                  type="password"
-                  id="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(event) => onPasswordChange(event.target.value)}
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(event) => onPasswordChange(event.target.value)}
+                  />
+
+                  <button
+                    type="button"
+                    className="password-visibility-button"
+                    onClick={() => onShowPasswordChange(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button type="submit">Login</button>

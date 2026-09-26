@@ -185,20 +185,57 @@ export const updateTransaction = async (req: Request, res: Response) => {
     });
   }
 
+  const newAmountPaid = Number(amountPaid);
+  const newTransactionDate = new Date(transactionDate);
+
   const updatedTransaction = await prisma.transaction.update({
     where: {
       id: transactionId,
     },
     data: {
       action,
-      amountPaid: Number(amountPaid),
-      profit: Number(amountPaid),
-      transactionDate: new Date(transactionDate),
+      amountPaid: newAmountPaid,
+      profit: newAmountPaid,
+      transactionDate: newTransactionDate,
     },
     include: {
       member: true,
     },
   });
+
+  const changes: string[] = [];
+
+  if (transaction.action !== action) {
+    changes.push(`Action: ${transaction.action} → ${action}`);
+  }
+
+  if (Number(transaction.amountPaid) !== newAmountPaid) {
+    changes.push(`Amount paid: ${transaction.amountPaid} → ${newAmountPaid}`);
+  }
+
+  if (transaction.transactionDate.getTime() !== newTransactionDate.getTime()) {
+    changes.push(
+      `Transaction date: ${transaction.transactionDate.toISOString()} → ${newTransactionDate.toISOString()}`,
+    );
+  }
+
+  if (changes.length > 0) {
+    await prisma.activityLog.create({
+      data: {
+        memberId: transaction.memberId,
+        ...(transaction.memberFirstName !== null && {
+          memberFirstName: transaction.memberFirstName,
+        }),
+        ...(transaction.memberLastName !== null && {
+          memberLastName: transaction.memberLastName,
+        }),
+        gymId: transaction.gymId,
+        performedByUserId: req.user.userId,
+        action: "TRANSACTION_UPDATED",
+        details: `Transaction #${transaction.id} updated. ${changes.join(", ")}`,
+      },
+    });
+  }
 
   return res.status(200).json(updatedTransaction);
 };

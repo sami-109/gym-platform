@@ -44,16 +44,34 @@
 }
 
 /* Equal column widths */
+/* Column widths */
 .transactions-table th:nth-child(1),
-.transactions-table td:nth-child(1),
+.transactions-table td:nth-child(1) {
+  width: 8%;
+}
+
 .transactions-table th:nth-child(2),
-.transactions-table td:nth-child(2),
+.transactions-table td:nth-child(2) {
+  width: 24%;
+}
+
 .transactions-table th:nth-child(3),
-.transactions-table td:nth-child(3),
+.transactions-table td:nth-child(3) {
+  width: 18%;
+}
+
 .transactions-table th:nth-child(4),
-.transactions-table td:nth-child(4),
+.transactions-table td:nth-child(4) {
+  width: 14%;
+}
+
 .transactions-table th:nth-child(5),
 .transactions-table td:nth-child(5) {
+  width: 16%;
+}
+
+.transactions-table th:nth-child(6),
+.transactions-table td:nth-child(6) {
   width: 20%;
 }
 

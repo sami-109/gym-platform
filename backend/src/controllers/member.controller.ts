@@ -644,6 +644,11 @@ export const editMember = async (req: Request, res: Response) => {
       member.firstName !== normalizedFirstName ||
       member.lastName !== normalizedLastName;
 
+    const phoneChanged = member.phone !== phone;
+    const emailChanged = member.email !== (email || null);
+
+    const memberChanged = nameChanged || phoneChanged || emailChanged;
+
     const updatedMember = await tx.user.update({
       where: {
         id: memberId,
@@ -678,19 +683,21 @@ export const editMember = async (req: Request, res: Response) => {
       });
     }
 
-    const activityLog = await tx.activityLog.create({
-      data: {
-        memberId: memberId,
-        memberFirstName: updatedMember.firstName,
-        memberLastName: updatedMember.lastName,
-        gymId: membership.gymId,
-        performedByUserId: req.user!.userId,
-        action: "MEMBER_UPDATED",
-        details: "Member information updated.",
-      },
-    });
+    if (memberChanged) {
+      await tx.activityLog.create({
+        data: {
+          memberId: memberId,
+          memberFirstName: updatedMember.firstName,
+          memberLastName: updatedMember.lastName,
+          gymId: membership.gymId,
+          performedByUserId: req.user!.userId,
+          action: "MEMBER_UPDATED",
+          details: "Member information updated.",
+        },
+      });
+    }
 
-    return { updatedMember, activityLog };
+    return { updatedMember };
   });
 
   return res.status(200).json({

@@ -24,6 +24,7 @@ function DisplayMembers({
   const [searchTerm, setSearchTerm] = useState("");
   const [daysSortAscending, setDaysSortAscending] = useState(true);
   const [nameSortAscending, setNameSortAscending] = useState(true);
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState<
     "id" | "firstName" | "lastName" | "days"
   >("id");
@@ -120,6 +121,13 @@ function DisplayMembers({
         </div>
 
         <button onClick={onAddMember}>+ Add Member</button>
+      </div>
+
+      <div className="table-header">
+        <p>
+          {filteredMembers.length}{" "}
+          {filteredMembers.length === 1 ? "Member" : "Members"}
+        </p>
       </div>
       <div className="members-table-wrapper">
         <table>
@@ -233,16 +241,73 @@ function DisplayMembers({
                 </div>
               </th>
               <th>
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                >
-                  <option value="ALL">Status</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="FROZEN">Frozen</option>
-                  <option value="DEACTIVATED">Deactivated</option>
-                  <option value="EXPIRED">Expired</option>
-                </select>
+                <div className="status-header">
+                  <span>Status</span>
+
+                  <div className="status-filter-wrapper">
+                    <button
+                      type="button"
+                      className="status-filter-button"
+                      onClick={() => setStatusFilterOpen((current) => !current)}
+                    >
+                      ▾
+                    </button>
+
+                    {statusFilterOpen && (
+                      <div className="status-filter-menu">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter("ALL");
+                            setStatusFilterOpen(false);
+                          }}
+                        >
+                          All
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter("ACTIVE");
+                            setStatusFilterOpen(false);
+                          }}
+                        >
+                          Active
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter("FROZEN");
+                            setStatusFilterOpen(false);
+                          }}
+                        >
+                          Frozen
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter("DEACTIVATED");
+                            setStatusFilterOpen(false);
+                          }}
+                        >
+                          Deactivated
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter("EXPIRED");
+                            setStatusFilterOpen(false);
+                          }}
+                        >
+                          Expired
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </th>
               <th className="actions-column">Actions</th>
             </tr>

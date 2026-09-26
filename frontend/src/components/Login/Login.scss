@@ -11,6 +11,8 @@
 }
 
 .auth-card {
+  position: relative;
+
   width: 100%;
   max-width: 420px;
 
@@ -21,6 +23,8 @@
   border-radius: 14px;
 
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+
+  overflow: hidden;
 }
 
 .auth-card h1 {
@@ -103,4 +107,37 @@
   color: #dc2626;
   font-size: 14px;
   text-align: center;
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input-wrapper input {
+  padding-right: 42px;
+}
+
+.auth-card form .password-visibility-button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 !important;
+  padding: 4px !important;
+
+  border: none !important;
+  background: transparent !important;
+
+  color: #64748b !important;
+
+  cursor: pointer;
+}
+
+.auth-card form .password-visibility-button:hover {
+  opacity: 0.7;
 }

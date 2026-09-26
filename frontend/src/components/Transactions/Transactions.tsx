@@ -299,13 +299,19 @@ function Transactions() {
           </div>
 
           {!loading && !error && (
-            <p>{filteredTransactions.length} transaction(s)</p>
+            <p>
+              {filteredTransactions.length}{" "}
+              {filteredTransactions.length === 1
+                ? "Transaction"
+                : "Transactions"}
+            </p>
           )}
 
           <div className="transactions-table-wrapper">
             <table className="transactions-table">
               <thead>
                 <tr>
+                  <th>ID</th>
                   <th>Member</th>
                   <th>Action</th>
                   <th>Amount</th>
@@ -317,12 +323,13 @@ function Transactions() {
               <tbody>
                 {filteredTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>No transactions</td>
+                    <td colSpan={6}>No transactions</td>
                   </tr>
                 ) : (
                   filteredTransactions.map((transaction) => (
                     <TransactionRow
                       key={transaction.id}
+                      id={transaction.id}
                       member={
                         transaction.member
                           ? `${transaction.member.firstName} ${transaction.member.lastName}`
