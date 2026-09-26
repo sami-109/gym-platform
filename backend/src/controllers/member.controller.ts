@@ -5,8 +5,26 @@ import prisma from "../lib/prisma.js";
 import { updateMembershipExpiration } from "../utils/membership.js";
 import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
 
+const normalizeName = (name: string) => {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
 export const createMember = async (req: Request, res: Response) => {
   const { firstName, lastName, phone, email, gymId, membershipType } = req.body;
+
+  const nameRegex = /^[A-Za-zÀ-ÿ]+(?:[ '-][A-Za-zÀ-ÿ]+)*$/;
+
+  if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
+    return res.status(400).json({
+      message: "First name and last name can only contain letters.",
+    });
+  }
+
+  const normalizedFirstName = normalizeName(firstName);
+  const normalizedLastName = normalizeName(lastName);
 
   if (!firstName || !lastName || !phone) {
     return res.status(400).json({
@@ -137,8 +155,8 @@ export const createMember = async (req: Request, res: Response) => {
   const result = await prisma.$transaction(async (tx) => {
     const member = await tx.user.create({
       data: {
-        firstName,
-        lastName,
+        firstName: normalizedFirstName,
+        lastName: normalizedLastName,
         username,
         email: email || null,
         phone,
@@ -523,6 +541,17 @@ export const editMember = async (req: Request, res: Response) => {
 
   const { firstName, lastName, phone, email } = req.body;
 
+  const nameRegex = /^[A-Za-zÀ-ÿ]+(?:[ '-][A-Za-zÀ-ÿ]+)*$/;
+
+  if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
+    return res.status(400).json({
+      message: "First name and last name can only contain letters.",
+    });
+  }
+
+  const normalizedFirstName = normalizeName(firstName);
+  const normalizedLastName = normalizeName(lastName);
+
   if (!firstName || !lastName || !phone) {
     return res.status(400).json({
       message: "First name, last name, and phone are required.",
@@ -611,17 +640,43 @@ export const editMember = async (req: Request, res: Response) => {
   }
 
   const result = await prisma.$transaction(async (tx) => {
+    const nameChanged =
+      member.firstName !== normalizedFirstName ||
+      member.lastName !== normalizedLastName;
+
     const updatedMember = await tx.user.update({
       where: {
         id: memberId,
       },
       data: {
-        firstName,
-        lastName,
+        firstName: normalizedFirstName,
+        lastName: normalizedLastName,
         phone,
         email: email || null,
       },
     });
+
+    if (nameChanged) {
+      await tx.activityLog.updateMany({
+        where: {
+          memberId,
+        },
+        data: {
+          memberFirstName: updatedMember.firstName,
+          memberLastName: updatedMember.lastName,
+        },
+      });
+
+      await tx.transaction.updateMany({
+        where: {
+          memberId,
+        },
+        data: {
+          memberFirstName: updatedMember.firstName,
+          memberLastName: updatedMember.lastName,
+        },
+      });
+    }
 
     const activityLog = await tx.activityLog.create({
       data: {
