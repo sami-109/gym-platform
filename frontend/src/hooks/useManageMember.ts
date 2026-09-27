@@ -18,6 +18,7 @@ function useManageMember(
   const [isDeleting, setIsDeleting] = useState(false);
   const [applyingChanges, setApplyingChanges] = useState(false);
   const [isRetrievingCredentials, setIsRetrievingCredentials] = useState(false);
+  const [showRetrieveConfirm, setShowRetrieveConfirm] = useState(false);
   const [retrievedCredentials, setRetrievedCredentials] = useState<{
     userId: number;
     username: string;
@@ -26,6 +27,14 @@ function useManageMember(
 
   const clearRetrievedCredentials = () => {
     setRetrievedCredentials(null);
+  };
+
+  const openRetrieveCredentials = () => {
+    setShowRetrieveConfirm(true);
+  };
+
+  const closeRetrieveCredentials = () => {
+    setShowRetrieveConfirm(false);
   };
 
   const selectedMember = members.find(
@@ -45,7 +54,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/gyms/${selectedMember.gymId}/memberships/${selectedMember.id}/freeze`,
+      `http://localhost:3000/api/memberships/${selectedMember.gymId}/memberships/${selectedMember.id}/freeze`,
       {
         method: "PATCH",
         headers: {
@@ -83,7 +92,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/gyms/${selectedMember.gymId}/memberships/${selectedMember.id}/resume`,
+      `http://localhost:3000/api/memberships/${selectedMember.gymId}/memberships/${selectedMember.id}/resume`,
       {
         method: "PATCH",
         headers: {
@@ -122,7 +131,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/gyms/${selectedMember.gymId}/memberships/${selectedMember.id}/renew`,
+      `http://localhost:3000/api/memberships/${selectedMember.gymId}/memberships/${selectedMember.id}/renew`,
       {
         method: "PATCH",
         headers: {
@@ -164,7 +173,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/gyms/${selectedMember.gymId}/memberships/${selectedMember.id}/dates`,
+      `http://localhost:3000/api/memberships/${selectedMember.gymId}/memberships/${selectedMember.id}/dates`,
       {
         method: "PATCH",
         headers: {
@@ -208,7 +217,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/gyms/${selectedMember.gymId}/memberships/${selectedMember.id}/day-pass`,
+      `http://localhost:3000/api/memberships/${selectedMember.gymId}/memberships/${selectedMember.id}/day-pass`,
       {
         method: "PATCH",
         headers: {
@@ -247,7 +256,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/members/${selectedMember.user.id}/deactivate`,
+      `http://localhost:3000/api/memberships/${selectedMember.user.id}/deactivate`,
       {
         method: "PATCH",
         headers: {
@@ -289,7 +298,7 @@ function useManageMember(
     if (!token) return;
 
     const response = await fetch(
-      `http://localhost:3000/api/members/${selectedMember.user.id}/activate`,
+      `http://localhost:3000/api/memberships/${selectedMember.user.id}/activate`,
       {
         method: "PATCH",
         headers: {
@@ -385,7 +394,6 @@ function useManageMember(
     setApplyingChanges(true);
 
     try {
-      // First save personal information if it changed
       const personalInfoChanged =
         editFirstName !== selectedMember.user.firstName ||
         editLastName !== selectedMember.user.lastName ||
@@ -396,7 +404,6 @@ function useManageMember(
         await editMember(editFirstName, editLastName, editPhone, editEmail);
       }
 
-      // Then perform the selected membership action
       if (editAction === "freeze") {
         await freezeMember();
         return;
@@ -427,7 +434,6 @@ function useManageMember(
         return;
       }
 
-      // If there is no action, check whether dates changed
       if (
         !editAction &&
         editStartDate &&
@@ -443,7 +449,6 @@ function useManageMember(
         return;
       }
 
-      // Nothing else to do
       if (!editAction && !personalInfoChanged) {
         closeManageMember();
       }
@@ -510,6 +515,11 @@ function useManageMember(
     } finally {
       setIsRetrievingCredentials(false);
     }
+  };
+
+  const confirmRetrieveCredentials = async (memberId: number) => {
+    await retrieveCredentials(memberId);
+    setShowRetrieveConfirm(false);
   };
 
   const requestDeleteMember = (memberId: number) => {
@@ -590,6 +600,11 @@ function useManageMember(
     isDeleting,
     applyingChanges,
     isRetrievingCredentials,
+
+    showRetrieveConfirm,
+    openRetrieveCredentials,
+    closeRetrieveCredentials,
+    confirmRetrieveCredentials,
   };
 }
 

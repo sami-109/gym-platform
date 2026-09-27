@@ -1,41 +1,41 @@
 import { Router } from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 import {
-  createGym,
+  getMyMembership,
+  activateMember,
+  deactivateMember,
   renewMembership,
   freezeMembership,
   resumeMembership,
-  connectAdminToGym,
-  getAllGyms,
-  editGym,
   adjustMembershipDates,
   addDayPass,
-} from "../controllers/gym.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+} from "../controllers/membership.controller.js";
 
 const router = Router();
 
-router.post("/", authMiddleware, createGym);
+router.get("/me", authMiddleware, getMyMembership);
+
+router.patch("/:memberId/activate", authMiddleware, activateMember);
+router.patch("/:memberId/deactivate", authMiddleware, deactivateMember);
 
 router.patch(
   "/:gymId/memberships/:membershipId/renew",
   authMiddleware,
   renewMembership,
 );
+
 router.patch(
   "/:gymId/memberships/:membershipId/freeze",
   authMiddleware,
   freezeMembership,
 );
+
 router.patch(
   "/:gymId/memberships/:membershipId/resume",
   authMiddleware,
   resumeMembership,
 );
-
-router.patch("/:gymId/admin/:adminId", authMiddleware, connectAdminToGym);
-
-router.patch("/:gymId", authMiddleware, editGym);
 
 router.patch(
   "/:gymId/memberships/:membershipId/dates",
@@ -48,7 +48,5 @@ router.patch(
   authMiddleware,
   addDayPass,
 );
-
-router.get("/view", authMiddleware, getAllGyms);
 
 export default router;

@@ -1,7 +1,4 @@
-type PhoneInputProps = {
-  phone: string;
-  onPhoneChange: (value: string) => void;
-};
+import type { PhoneInputProps } from "../../types/phoneInput";
 
 function PhoneInput({ phone, onPhoneChange }: PhoneInputProps) {
   const isLebanon = phone.startsWith("961");

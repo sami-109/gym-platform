@@ -1,6 +1,54 @@
+import { getManagedGym } from "../utils/authorization.js";
 import { type Request, type Response } from "express";
 import prisma from "../lib/prisma.js";
-import { getManagedGym } from "../utils/authorization.js";
+import { updateMembershipExpiration } from "../utils/membership.js";
+import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
+
+export const getMyMembership = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "MEMBER") {
+    return res.status(403).json({
+      message: "Only members can view their own membership.",
+    });
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId: req.user.userId,
+    },
+    include: {
+      gym: {
+        select: {
+          id: true,
+          name: true,
+          gymCode: true,
+          address: true,
+          description: true,
+        },
+      },
+    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+  // Update the membership status if its expiry date has passed.
+  const currentStatus = await updateMembershipExpiration(membership);
+
+  return res.status(200).json({
+    membership: {
+      ...membership,
+      status: currentStatus,
+    },
+  });
+};
 
 export const renewMembership = async (
   req: Request<{ gymId: string; membershipId: string }>,
@@ -8,6 +56,12 @@ export const renewMembership = async (
 ) => {
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
+
+  if (Number.isNaN(gymId) || Number.isNaN(membershipId)) {
+    return res.status(400).json({
+      message: "Invalid gym or membership ID.",
+    });
+  }
 
   if (
     !req.user ||
@@ -73,6 +127,9 @@ export const renewMembership = async (
   let newStartDate: Date;
   let newExpiryDate: Date;
 
+  // If the membership is still active, extend its existing expiry date.
+  // Otherwise, start the renewed membership from now.
+
   if (expiryDate > now) {
     newStartDate = membership.startDate;
     newExpiryDate = new Date(expiryDate);
@@ -97,6 +154,7 @@ export const renewMembership = async (
     });
   }
 
+  // Update the membership and record the renewal in the transaction and activity log together.
   const result = await prisma.$transaction(async (tx) => {
     const updatedMembership = await tx.membership.update({
       where: {
@@ -152,6 +210,12 @@ export const freezeMembership = async (
 ) => {
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
+
+  if (Number.isNaN(gymId) || Number.isNaN(membershipId)) {
+    return res.status(400).json({
+      message: "Invalid gym or membership ID.",
+    });
+  }
 
   if (
     !req.user ||
@@ -211,10 +275,12 @@ export const freezeMembership = async (
     });
   }
 
+  // Store the remaining membership time so it can be restored when the membership is resumed.
   const remainingSeconds = Math.floor(
     (membership.expiryDate.getTime() - now.getTime()) / 1000,
   );
 
+  // Freeze the membership and record the action together.
   const result = await prisma.$transaction(async (tx) => {
     const frozenMembership = await tx.membership.update({
       where: {
@@ -256,6 +322,12 @@ export const resumeMembership = async (
 ) => {
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
+
+  if (Number.isNaN(gymId) || Number.isNaN(membershipId)) {
+    return res.status(400).json({
+      message: "Invalid gym or membership ID.",
+    });
+  }
 
   if (
     !req.user ||
@@ -312,6 +384,7 @@ export const resumeMembership = async (
 
   const now = new Date();
 
+  // Restore the membership using the amount of time saved when it was frozen.
   const newExpiryDate = new Date(
     now.getTime() + membership.frozenRemainingSeconds * 1000,
   );
@@ -351,204 +424,18 @@ export const resumeMembership = async (
   });
 };
 
-export const createGym = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "SUPER_ADMIN") {
-    return res.status(403).json({
-      message: "Only the Super Admin can create gyms.",
-    });
-  }
-
-  const { gymCode, address, description } = req.body;
-
-  if (!gymCode || !address) {
-    return res.status(400).json({
-      message: "Gym code and address are required.",
-    });
-  }
-
-  const gym = await prisma.gym.create({
-    data: {
-      gymCode,
-      name: gymCode,
-      address,
-      ...(description && { description }),
-    },
-  });
-
-  return res.status(201).json({
-    message: "Gym created successfully.",
-    gym: {
-      id: gym.id,
-      gymCode: gym.gymCode,
-      name: gym.name,
-      address: gym.address,
-      description: gym.description,
-    },
-  });
-};
-
-export const connectAdminToGym = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "SUPER_ADMIN") {
-    return res.status(403).json({
-      message: "Only the Super Admin can connect an Admin to a gym.",
-    });
-  }
-  const { gymId, adminId } = req.params;
-
-  const gymIdNumber = Number(gymId);
-  const adminIdNumber = Number(adminId);
-  const admin = await prisma.user.findUnique({
-    where: {
-      id: adminIdNumber,
-    },
-  });
-  if (!admin || admin.role !== "ADMIN") {
-    return res.status(404).json({
-      message: "Admin account not found.",
-    });
-  }
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymIdNumber,
-    },
-  });
-  if (!gym) {
-    return res.status(404).json({
-      message: "Gym not found.",
-    });
-  }
-  const existingGym = await prisma.gym.findUnique({
-    where: {
-      adminId: adminIdNumber,
-    },
-  });
-  if (existingGym) {
-    return res.status(409).json({
-      message: "This Admin is already managing a gym.",
-    });
-  }
-  if (gym.adminId !== null) {
-    return res.status(409).json({
-      message: "This gym already has an Admin.",
-    });
-  }
-  const updatedGym = await prisma.gym.update({
-    where: {
-      id: gymIdNumber,
-    },
-    data: {
-      adminId: adminIdNumber,
-    },
-  });
-  return res.status(200).json({
-    message: `${admin.firstName} ${admin.lastName} is now managing ${updatedGym.name}.`,
-    gym: {
-      id: updatedGym.id,
-      gymCode: updatedGym.gymCode,
-      name: updatedGym.name,
-      adminId: updatedGym.adminId,
-    },
-  });
-};
-
-export const getAllGyms = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "SUPER_ADMIN") {
-    return res.status(403).json({
-      message: "Only the Super Admin can view gyms.",
-    });
-  }
-
-  const gyms = await prisma.gym.findMany({
-    select: {
-      id: true,
-      name: true,
-      gymCode: true,
-      address: true,
-      description: true,
-      admin: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          username: true,
-        },
-      },
-    },
-  });
-
-  return res.status(200).json({ gyms });
-};
-
-export const editGym = async (req: Request, res: Response) => {
-  const { gymId } = req.params;
-  const { name, address, description } = req.body;
-
-  const gymIdNumber = Number(gymId);
-
-  const gym = await prisma.gym.findUnique({
-    where: {
-      id: gymIdNumber,
-    },
-    include: {
-      admin: true,
-    },
-  });
-
-  if (!gym) {
-    return res.status(404).json({
-      message: "Gym not found.",
-    });
-  }
-
-  if (req.user?.role === "SUPER_ADMIN") {
-    // Super Admin can edit any gym.
-  } else if (req.user?.role === "ADMIN") {
-    if (gym.adminId !== req.user.userId) {
-      return res.status(403).json({
-        message: "You can only edit the gym you manage.",
-      });
-    }
-  } else {
-    return res.status(403).json({
-      message: "Only a Super Admin or Gym Admin can edit gyms.",
-    });
-  }
-
-  if (!name && !address && !description) {
-    return res.status(400).json({
-      message: "At least one gym field must be provided.",
-    });
-  }
-
-  const updatedGym = await prisma.gym.update({
-    where: {
-      id: gymIdNumber,
-    },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(address !== undefined && { address }),
-      ...(description !== undefined && { description }),
-    },
-  });
-
-  return res.status(200).json({
-    message: "Gym updated successfully.",
-    gym: {
-      id: updatedGym.id,
-      name: updatedGym.name,
-      gymCode: updatedGym.gymCode,
-      address: updatedGym.address,
-      description: updatedGym.description,
-    },
-  });
-};
-
 export const adjustMembershipDates = async (
   req: Request<{ gymId: string; membershipId: string }>,
   res: Response,
 ) => {
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
+
+  if (Number.isNaN(gymId) || Number.isNaN(membershipId)) {
+    return res.status(400).json({
+      message: "Invalid gym or membership ID.",
+    });
+  }
 
   if (
     !req.user ||
@@ -627,8 +514,10 @@ export const adjustMembershipDates = async (
     });
   }
 
+  // Automatically set the membership status based on the new expiry date.
   const newStatus = newExpiryDate < new Date() ? "EXPIRED" : "ACTIVE";
 
+  // Update the membership dates and record the adjustment together.
   const result = await prisma.$transaction(async (tx) => {
     const updatedMembership = await tx.membership.update({
       where: {
@@ -668,6 +557,12 @@ export const addDayPass = async (
 ) => {
   const gymId = Number(req.params.gymId);
   const membershipId = Number(req.params.membershipId);
+
+  if (Number.isNaN(gymId) || Number.isNaN(membershipId)) {
+    return res.status(400).json({
+      message: "Invalid gym or membership ID.",
+    });
+  }
 
   if (
     !req.user ||
@@ -733,6 +628,7 @@ export const addDayPass = async (
     });
   }
 
+  // A day pass starts now and lasts for one day.
   const startDate = now;
   const expiryDate = new Date(startDate);
   expiryDate.setDate(expiryDate.getDate() + 1);
@@ -749,6 +645,7 @@ export const addDayPass = async (
     });
   }
 
+  // Activate the membership for the day pass and record the payment and activity together.
   const result = await prisma.$transaction(async (tx) => {
     const updatedMembership = await tx.membership.update({
       where: {
@@ -797,5 +694,210 @@ export const addDayPass = async (
   return res.status(200).json({
     message: "Day pass added successfully.",
     membership: result.updatedMembership,
+  });
+};
+
+export const deactivateMember = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin or Gym Admin can deactivate members.",
+    });
+  }
+
+  const memberId = Number(req.params.memberId);
+
+  const member = await prisma.user.findUnique({
+    where: {
+      id: memberId,
+    },
+  });
+
+  if (!member || member.role !== "MEMBER") {
+    return res.status(404).json({
+      message: "Member not found.",
+    });
+  }
+
+  if (req.user.role === "ADMIN") {
+    const adminGym = await getAdminGym(req.user.userId);
+
+    if (!adminGym) {
+      return res.status(403).json({
+        message: "You must be managing a gym to deactivate members.",
+      });
+    }
+
+    const isMember = await isMemberInGym(memberId, adminGym.id);
+
+    if (!isMember) {
+      return res.status(403).json({
+        message: "You can only deactivate members of your gym.",
+      });
+    }
+  }
+
+  if (member.status === "DEACTIVATED") {
+    return res.status(400).json({
+      message: "Member is already deactivated.",
+    });
+  }
+
+  // Deactivate the account and expire its membership together.
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMember = await tx.user.update({
+      where: {
+        id: memberId,
+      },
+      data: {
+        status: "DEACTIVATED",
+      },
+    });
+
+    const updatedMembership = await tx.membership.update({
+      where: {
+        userId: memberId,
+      },
+      data: {
+        expiryDate: new Date(),
+        status: "EXPIRED",
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: memberId,
+        memberFirstName: member.firstName,
+        memberLastName: member.lastName,
+        gymId: updatedMembership.gymId,
+        performedByUserId: req.user!.userId,
+        action: "DEACTIVATED",
+        details: "Member deactivated.",
+      },
+    });
+
+    return { updatedMember, updatedMembership, activityLog };
+  });
+
+  return res.status(200).json({
+    message: "Member deactivated successfully.",
+    member: {
+      id: result.updatedMember.id,
+      firstName: result.updatedMember.firstName,
+      lastName: result.updatedMember.lastName,
+      username: result.updatedMember.username,
+      status: result.updatedMember.status,
+    },
+    membership: {
+      status: result.updatedMembership.status,
+      startDate: result.updatedMembership.startDate,
+      expiryDate: result.updatedMembership.expiryDate,
+    },
+  });
+};
+
+export const activateMember = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({
+      message: "Authentication required.",
+    });
+  }
+
+  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      message: "Only the Super Admin or Gym Admin can activate members.",
+    });
+  }
+
+  const memberId = Number(req.params.memberId);
+
+  const member = await prisma.user.findUnique({
+    where: {
+      id: memberId,
+    },
+  });
+
+  if (!member || member.role !== "MEMBER") {
+    return res.status(404).json({
+      message: "Member not found.",
+    });
+  }
+
+  if (req.user.role === "ADMIN") {
+    const adminGym = await getAdminGym(req.user.userId);
+
+    if (!adminGym) {
+      return res.status(403).json({
+        message: "You must be managing a gym to activate members.",
+      });
+    }
+
+    const isMember = await isMemberInGym(memberId, adminGym.id);
+
+    if (!isMember) {
+      return res.status(403).json({
+        message: "You can only activate members of your gym.",
+      });
+    }
+  }
+
+  if (member.status === "ACTIVE") {
+    return res.status(400).json({
+      message: "Member is already active.",
+    });
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      userId: memberId,
+    },
+  });
+
+  if (!membership) {
+    return res.status(404).json({
+      message: "Membership not found.",
+    });
+  }
+
+  // Reactivate the member account and record the activation in the activity log together.
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedMember = await tx.user.update({
+      where: {
+        id: memberId,
+      },
+      data: {
+        status: "ACTIVE",
+      },
+    });
+
+    const activityLog = await tx.activityLog.create({
+      data: {
+        memberId: memberId,
+        memberFirstName: updatedMember.firstName,
+        memberLastName: updatedMember.lastName,
+        gymId: membership.gymId,
+        performedByUserId: req.user!.userId,
+        action: "ACTIVATED",
+        details: "Member activated.",
+      },
+    });
+
+    return { updatedMember, activityLog };
+  });
+
+  return res.status(200).json({
+    message: "Member activated successfully.",
+    member: {
+      id: result.updatedMember.id,
+      firstName: result.updatedMember.firstName,
+      lastName: result.updatedMember.lastName,
+      username: result.updatedMember.username,
+      status: result.updatedMember.status,
+    },
   });
 };

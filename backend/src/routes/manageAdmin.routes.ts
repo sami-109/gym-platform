@@ -1,18 +1,16 @@
 import { Router } from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 import {
   createAdmin,
   getAllAdmins,
-  disconnectAdminFromGym,
   editAdmin,
-} from "../controllers/admin.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+} from "../controllers/manageAdmin.controller.js";
 
 const router = Router();
 
 router.post("/create", authMiddleware, createAdmin);
 router.get("/view", authMiddleware, getAllAdmins);
-router.patch("/:adminId/disconnect", authMiddleware, disconnectAdminFromGym);
 router.patch("/:adminId", authMiddleware, editAdmin);
 
 export default router;

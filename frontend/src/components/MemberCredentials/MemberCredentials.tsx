@@ -2,19 +2,8 @@ import "../../styles/_modal.scss";
 import "./MemberCredentials.scss";
 import { formatPhone } from "../../utils/phone";
 import { createPortal } from "react-dom";
-
-type MemberCredentialsProps = {
-  memberId: number | null;
-  memberName: string;
-  memberPhone: string;
-  memberEmail: string;
-  membershipType?: string;
-  username: string;
-  password: string;
-  title?: string;
-
-  onClose: () => void;
-};
+import type { MemberCredentialsProps } from "../../types/memberCredentials";
+import { getMembershipTypeDisplay } from "../../utils/memberCredentials";
 
 function MemberCredentials({
   memberId,
@@ -28,11 +17,7 @@ function MemberCredentials({
   title,
 }: MemberCredentialsProps) {
   const membershipTypeDisplay = membershipType
-    ? {
-        "1-month": "1 Month",
-        trial: "Trial",
-        "day-pass": "Day Pass",
-      }[membershipType] || membershipType
+    ? getMembershipTypeDisplay(membershipType)
     : "";
   return createPortal(
     <div className="modal-backdrop member-credentials-backdrop">

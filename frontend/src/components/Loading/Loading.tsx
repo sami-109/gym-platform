@@ -1,8 +1,5 @@
 import "./Loading.scss";
-
-type LoadingProps = {
-  message?: string;
-};
+import type { LoadingProps } from "../../types/loading";
 
 function Loading({ message = "Loading..." }: LoadingProps) {
   return (

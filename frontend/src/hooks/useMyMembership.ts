@@ -21,7 +21,7 @@ function useMembership(
 
       try {
         const response = await fetch(
-          "http://localhost:3000/api/members/me/membership",
+          "http://localhost:3000/api/memberships/me",
           {
             headers: {
               Authorization: `Bearer ${token}`,

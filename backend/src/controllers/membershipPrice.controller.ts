@@ -80,6 +80,7 @@ export const updateMembershipPrices = async (req: Request, res: Response) => {
     });
   }
 
+  // Create the gym's prices if they don't exist, or update the existing prices.
   const prices = await prisma.membershipPrice.upsert({
     where: {
       gymId: gym.id,

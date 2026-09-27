@@ -1,26 +1,21 @@
 import "./AdminDashboard.scss";
 import "../../styles/_profile.scss";
 import Sidebar from "../Sidebar/Sidebar";
-import { useState } from "react";
-import Transactions from "../Transactions/Transactions";
+import MembershipTransactions from "../MembershipTransactions/MembershipTransactions";
 import ActivityLog from "../ActivityLog/ActivityLog";
-
-type AdminDashboardProps = {
-  firstName: string;
-  lastName: string;
-  gymName: string;
-  onLogout: () => void;
-  children: React.ReactNode;
-};
+import type { AdminDashboardProps } from "../../types/adminDashboard.ts";
+import useDashboard from "../../hooks/useDashboard.ts";
 
 function AdminDashboard({
   firstName,
   lastName,
   gymName,
+
   onLogout,
   children,
 }: AdminDashboardProps) {
-  const [activeSection, setActiveSection] = useState("memberships");
+  const { activeSection, setActiveSection } = useDashboard();
+
   return (
     <div className="dashboard">
       <header className="profile-header">
@@ -55,7 +50,7 @@ function AdminDashboard({
         <main className="dashboard-main">
           {activeSection === "memberships" && children}
 
-          {activeSection === "transactions" && <Transactions />}
+          {activeSection === "transactions" && <MembershipTransactions />}
 
           {activeSection === "activity-log" && <ActivityLog />}
         </main>

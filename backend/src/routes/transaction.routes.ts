@@ -1,10 +1,11 @@
 import { Router } from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
+
 import {
   getTransactions,
   deleteTransaction,
   updateTransaction,
-} from "../controllers/Transaction.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+} from "../controllers/transaction.controller.js";
 
 const router = Router();
 

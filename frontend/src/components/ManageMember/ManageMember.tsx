@@ -1,41 +1,12 @@
-import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import type { Member } from "../../types/member";
 import { getMembershipDisplay } from "../../utils/membership";
 import PhoneInput from "../PhoneInput/PhoneInput";
 import "../../styles/_modal.scss";
 import "./ManageMember.scss";
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import Loading from "../Loading/Loading";
-
-type ManageMemberProps = {
-  member: Member;
-  currentTime: number;
-  onRetrieveCredentials: (memberId: number) => Promise<void>;
-
-  firstName: string;
-  isRetrievingCredentials: boolean;
-  lastName: string;
-  applyingChanges: boolean;
-  phone: string;
-  email: string;
-  startDate: string;
-  expiryDate: string;
-  action: string;
-  error: string;
-
-  onFirstNameChange: (value: string) => void;
-  onLastNameChange: (value: string) => void;
-  onPhoneChange: (value: string) => void;
-  onEmailChange: (value: string) => void;
-  onStartDateChange: (value: string) => void;
-  onExpiryDateChange: (value: string) => void;
-  onActionChange: (value: string) => void;
-
-  onApply: () => void;
-  onClose: () => void;
-};
+import type { ManageMemberProps } from "../../types/manageMember";
 
 function ManageMember({
   member,
@@ -46,7 +17,6 @@ function ManageMember({
   applyingChanges,
   isRetrievingCredentials,
   email,
-  onRetrieveCredentials,
   startDate,
   expiryDate,
   action,
@@ -58,10 +28,13 @@ function ManageMember({
   onExpiryDateChange,
   onActionChange,
   onApply,
+  showRetrieveConfirm,
+  openRetrieveCredentials,
+  closeRetrieveCredentials,
+  confirmRetrieveCredentials,
   onClose,
   error,
 }: ManageMemberProps) {
-  const [showRetrieveConfirm, setShowRetrieveConfirm] = useState(false);
   return (
     <div className="modal-backdrop">
       <section className="manage-member-modal">
@@ -88,7 +61,7 @@ function ManageMember({
                 <button
                   type="button"
                   className="retrieve-credentials-button"
-                  onClick={() => setShowRetrieveConfirm(true)}
+                  onClick={openRetrieveCredentials}
                 >
                   Retrieve Credentials
                 </button>
@@ -255,11 +228,8 @@ function ManageMember({
                 isLoading={isRetrievingCredentials}
                 isLoadingMessage="Retrieving credentials..."
                 confirmLabel="Retrieve"
-                onConfirm={async () => {
-                  await onRetrieveCredentials(member.user.id);
-                  setShowRetrieveConfirm(false);
-                }}
-                onCancel={() => setShowRetrieveConfirm(false)}
+                onConfirm={() => confirmRetrieveCredentials(member.user.id)}
+                onCancel={closeRetrieveCredentials}
               />
             )}
           </>

@@ -2,14 +2,16 @@ import "dotenv/config";
 import express from "express";
 import prisma from "./lib/prisma.js";
 import authRoutes from "./routes/auth.routes.js";
-import gymRoutes from "./routes/gym.routes.js";
-import adminRoutes from "./routes/admin.routes.js";
-import memberRoutes from "./routes/member.routes.js";
-import cors from "cors";
-import { errorMiddleware } from "./middleware/error.middleware.js";
+import manageAdminRoutes from "./routes/manageAdmin.routes.js";
+import adminGymRoutes from "./routes/adminGym.routes.js";
+import manageGymRoutes from "./routes/manageGym.routes.js";
+import manageMemberRoutes from "./routes/manageMember.routes.js";
+import membershipRoutes from "./routes/membership.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import membershipPriceRoutes from "./routes/membershipPrice.routes.js";
 import activityLogRoutes from "./routes/activityLog.routes.js";
+import cors from "cors";
+import { errorMiddleware } from "./middleware/error.middleware.js";
 
 const app = express();
 
@@ -22,9 +24,14 @@ app.use(
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
-app.use("/api/gyms", gymRoutes);
-app.use("/api/admins", adminRoutes);
-app.use("/api/members", memberRoutes);
+
+app.use("/api/admins", manageAdminRoutes);
+app.use("/api/admin-gym", adminGymRoutes);
+
+app.use("/api/gyms", manageGymRoutes);
+app.use("/api/members", manageMemberRoutes);
+app.use("/api/memberships", membershipRoutes);
+
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/membership-prices", membershipPriceRoutes);
 app.use("/api/activity-logs", activityLogRoutes);

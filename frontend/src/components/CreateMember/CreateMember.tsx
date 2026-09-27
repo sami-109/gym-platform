@@ -1,25 +1,7 @@
 import "../../styles/_modal.scss";
 import PhoneInput from "../../components/PhoneInput/PhoneInput";
 import Loading from "../Loading/Loading";
-
-type CreateMemberProps = {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  creating: boolean;
-  error: string;
-  membershipType: string;
-
-  onFirstNameChange: (value: string) => void;
-  onLastNameChange: (value: string) => void;
-  onPhoneChange: (value: string) => void;
-  onEmailChange: (value: string) => void;
-  onMembershipTypeChange: (value: string) => void;
-
-  onCreate: () => void;
-  onClose: () => void;
-};
+import type { CreateMemberProps } from "../../types/createMember";
 
 function CreateMember({
   firstName,

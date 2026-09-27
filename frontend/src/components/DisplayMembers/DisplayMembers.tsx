@@ -1,16 +1,8 @@
-import { formatDate, getDaysRemaining } from "../../utils/membership";
-import type { Member } from "../../types/member";
 import "./DisplayMembers.scss";
 import { formatPhone } from "../../utils/phone";
-import { useState } from "react";
-
-type DisplayMembersProps = {
-  members: Member[];
-  currentTime: number;
-  onAddMember: () => void;
-  onManageMember: (memberId: number) => void;
-  onDeleteMember: (memberId: number) => void;
-};
+import useDisplayMembers from "../../hooks/useDisplayMembers";
+import type { DisplayMembersProps } from "../../types/displayMembers";
+import { formatDate, getDaysRemaining } from "../../utils/membership";
 
 function DisplayMembers({
   members,
@@ -19,92 +11,34 @@ function DisplayMembers({
   onManageMember,
   onDeleteMember,
 }: DisplayMembersProps) {
-  const [idSortAscending, setIdSortAscending] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [daysSortAscending, setDaysSortAscending] = useState(true);
-  const [nameSortAscending, setNameSortAscending] = useState(true);
-  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<
-    "id" | "firstName" | "lastName" | "days"
-  >("id");
-  const [daysFilter, setDaysFilter] = useState("ALL");
-  const [daysFilterOpen, setDaysFilterOpen] = useState(false);
+  const {
+    searchTerm,
+    setSearchTerm,
 
-  const filteredMembers = members.filter((member) => {
-    const search = searchTerm.toLowerCase().trim();
+    filteredMembers,
+    sortedMembers,
 
-    const fullName =
-      `${member.user.firstName} ${member.user.lastName}`.toLowerCase();
+    statusFilterOpen,
 
-    const normalizedSearch = search.replace(/\s/g, "");
-    const normalizedPhone = member.user.phone.replace(/\s/g, "");
+    daysFilterOpen,
 
-    const matchesSearch =
-      fullName.includes(search) ||
-      member.user.firstName.toLowerCase().includes(search) ||
-      member.user.lastName.toLowerCase().includes(search) ||
-      normalizedPhone.includes(normalizedSearch);
+    sortBy,
 
-    if (!matchesSearch) return false;
+    idSortAscending,
+    nameSortAscending,
+    daysSortAscending,
 
-    if (statusFilter !== "ALL") {
-      if (statusFilter === "DEACTIVATED") {
-        if (member.user.status !== "DEACTIVATED") return false;
-      } else if (statusFilter === "EXPIRED") {
-        if (
-          member.status !== "EXPIRED" ||
-          member.user.status === "DEACTIVATED"
-        ) {
-          return false;
-        }
-      } else if (member.status !== statusFilter) {
-        return false;
-      }
-    }
+    handleIdSort,
+    handleFirstNameSort,
+    handleLastNameSort,
+    handleDaysSort,
 
-    if (daysFilter === "LESS_THAN_7") {
-      const daysRemaining = getDaysRemaining(member, currentTime);
+    toggleDaysFilter,
+    selectDaysFilter,
 
-      if (daysRemaining < 0 || daysRemaining >= 7) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  const sortedMembers = [...filteredMembers].sort((a, b) => {
-    if (sortBy === "id") {
-      const idA = Number(a.user.username.match(/\d+$/)?.[0] ?? 0);
-      const idB = Number(b.user.username.match(/\d+$/)?.[0] ?? 0);
-
-      return idSortAscending ? idA - idB : idB - idA;
-    }
-
-    if (sortBy === "firstName") {
-      const nameA = a.user.firstName.toLowerCase();
-      const nameB = b.user.firstName.toLowerCase();
-
-      return nameSortAscending
-        ? nameA.localeCompare(nameB)
-        : nameB.localeCompare(nameA);
-    }
-
-    if (sortBy === "lastName") {
-      const nameA = a.user.lastName.toLowerCase();
-      const nameB = b.user.lastName.toLowerCase();
-
-      return nameSortAscending
-        ? nameA.localeCompare(nameB)
-        : nameB.localeCompare(nameA);
-    }
-
-    const daysA = getDaysRemaining(a, currentTime);
-    const daysB = getDaysRemaining(b, currentTime);
-
-    return daysSortAscending ? daysA - daysB : daysB - daysA;
-  });
+    toggleStatusFilter,
+    selectStatusFilter,
+  } = useDisplayMembers(members, currentTime);
 
   return (
     <section>
@@ -136,10 +70,7 @@ function DisplayMembers({
               <th>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSortBy("id");
-                    setIdSortAscending((current) => !current);
-                  }}
+                  onClick={handleIdSort}
                   className="id-sort-button"
                 >
                   ID
@@ -153,10 +84,7 @@ function DisplayMembers({
               <th>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSortBy("firstName");
-                    setNameSortAscending((current) => !current);
-                  }}
+                  onClick={handleFirstNameSort}
                   className="name-sort-button"
                 >
                   First Name
@@ -170,10 +98,7 @@ function DisplayMembers({
               <th>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSortBy("lastName");
-                    setNameSortAscending((current) => !current);
-                  }}
+                  onClick={handleLastNameSort}
                   className="name-sort-button"
                 >
                   Last Name
@@ -191,10 +116,7 @@ function DisplayMembers({
                 <div className="days-header">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSortBy("days");
-                      setDaysSortAscending((current) => !current);
-                    }}
+                    onClick={handleDaysSort}
                     className="days-sort-button"
                   >
                     Days Remaining
@@ -209,7 +131,7 @@ function DisplayMembers({
                     <button
                       type="button"
                       className="days-filter-button"
-                      onClick={() => setDaysFilterOpen((current) => !current)}
+                      onClick={toggleDaysFilter}
                     >
                       ▾
                     </button>
@@ -218,20 +140,14 @@ function DisplayMembers({
                       <div className="days-filter-menu">
                         <button
                           type="button"
-                          onClick={() => {
-                            setDaysFilter("ALL");
-                            setDaysFilterOpen(false);
-                          }}
+                          onClick={() => selectDaysFilter("ALL")}
                         >
                           All
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setDaysFilter("LESS_THAN_7");
-                            setDaysFilterOpen(false);
-                          }}
+                          onClick={() => selectDaysFilter("LESS_THAN_7")}
                         >
                           Less than 7 days
                         </button>
@@ -248,7 +164,7 @@ function DisplayMembers({
                     <button
                       type="button"
                       className="status-filter-button"
-                      onClick={() => setStatusFilterOpen((current) => !current)}
+                      onClick={toggleStatusFilter}
                     >
                       ▾
                     </button>
@@ -257,50 +173,35 @@ function DisplayMembers({
                       <div className="status-filter-menu">
                         <button
                           type="button"
-                          onClick={() => {
-                            setStatusFilter("ALL");
-                            setStatusFilterOpen(false);
-                          }}
+                          onClick={() => selectStatusFilter("ALL")}
                         >
                           All
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setStatusFilter("ACTIVE");
-                            setStatusFilterOpen(false);
-                          }}
+                          onClick={() => selectStatusFilter("ACTIVE")}
                         >
                           Active
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setStatusFilter("FROZEN");
-                            setStatusFilterOpen(false);
-                          }}
+                          onClick={() => selectStatusFilter("FROZEN")}
                         >
                           Frozen
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setStatusFilter("DEACTIVATED");
-                            setStatusFilterOpen(false);
-                          }}
+                          onClick={() => selectStatusFilter("DEACTIVATED")}
                         >
                           Deactivated
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setStatusFilter("EXPIRED");
-                            setStatusFilterOpen(false);
-                          }}
+                          onClick={() => selectStatusFilter("EXPIRED")}
                         >
                           Expired
                         </button>

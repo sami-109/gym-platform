@@ -1,9 +1,10 @@
 import { Router } from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
+
 import {
   getMembershipPrices,
   updateMembershipPrices,
 } from "../controllers/membershipPrice.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
 

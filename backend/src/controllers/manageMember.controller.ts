@@ -1,6 +1,5 @@
 import { type Request, type Response } from "express";
-import { hashPassword } from "../utils/passwordHash.js";
-import { generateMemberPassword } from "../utils/password.js";
+import { generatePassword } from "../utils/password.js";
 import prisma from "../lib/prisma.js";
 import { updateMembershipExpiration } from "../utils/membership.js";
 import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
@@ -15,6 +14,12 @@ const normalizeName = (name: string) => {
 export const createMember = async (req: Request, res: Response) => {
   const { firstName, lastName, phone, email, gymId, membershipType } = req.body;
 
+  if (!firstName || !lastName || !phone) {
+    return res.status(400).json({
+      message: "First name, last name, and phone are required.",
+    });
+  }
+
   const nameRegex = /^[A-Za-zÀ-ÿ]+(?:[ '-][A-Za-zÀ-ÿ]+)*$/;
 
   if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
@@ -25,12 +30,6 @@ export const createMember = async (req: Request, res: Response) => {
 
   const normalizedFirstName = normalizeName(firstName);
   const normalizedLastName = normalizeName(lastName);
-
-  if (!firstName || !lastName || !phone) {
-    return res.status(400).json({
-      message: "First name, last name, and phone are required.",
-    });
-  }
 
   if (!["1-month", "trial", "day-pass"].includes(membershipType)) {
     return res.status(400).json({
@@ -64,6 +63,12 @@ export const createMember = async (req: Request, res: Response) => {
     }
 
     targetGymId = Number(gymId);
+
+    if (Number.isNaN(targetGymId)) {
+      return res.status(400).json({
+        message: "Invalid gym ID.",
+      });
+    }
   } else if (req.user.role === "ADMIN") {
     const adminGym = await getAdminGym(req.user.userId);
 
@@ -80,12 +85,6 @@ export const createMember = async (req: Request, res: Response) => {
     });
   }
 
-  if (targetGymId === undefined) {
-    return res.status(400).json({
-      message: "Invalid gym.",
-    });
-  }
-
   const gym = await prisma.gym.findUnique({
     where: {
       id: targetGymId,
@@ -98,6 +97,7 @@ export const createMember = async (req: Request, res: Response) => {
     });
   }
 
+  // Generate the next available username using the gym code.
   let counter = 1;
   let username = `${gym.gymCode}${counter}`;
 
@@ -106,6 +106,7 @@ export const createMember = async (req: Request, res: Response) => {
     username = `${gym.gymCode}${counter}`;
   }
 
+  // Prevent duplicate phone numbers or email addresses.
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [{ phone }, ...(email ? [{ email }] : [])],
@@ -118,14 +119,13 @@ export const createMember = async (req: Request, res: Response) => {
     });
   }
 
-  const password = generateMemberPassword();
+  const { password, passwordHash } = await generatePassword();
 
-  const hashedPassword = await hashPassword(password);
-
+  // Set the membership expiry based on the selected membership type.
   const startDate = new Date();
-
   const expiryDate = new Date(startDate);
 
+  // Get the gym's configured prices so the transaction records the correct amount.
   const membershipPrices = await prisma.membershipPrice.findUnique({
     where: {
       gymId: gym.id,
@@ -152,6 +152,8 @@ export const createMember = async (req: Request, res: Response) => {
     amountPaid = membershipPrices.dayPass;
   }
 
+  // Create the member, membership, financial transaction, and activity log together.
+  // If any operation fails, the entire transaction is rolled back.
   const result = await prisma.$transaction(async (tx) => {
     const member = await tx.user.create({
       data: {
@@ -160,7 +162,7 @@ export const createMember = async (req: Request, res: Response) => {
         username,
         email: email || null,
         phone,
-        passwordHash: hashedPassword,
+        passwordHash,
         role: "MEMBER",
       },
     });
@@ -265,6 +267,7 @@ export const getMembers = async (req: Request, res: Response) => {
     },
   });
 
+  // Update expired memberships before returning them to the frontend.
   for (const membership of memberships) {
     const currentStatus = await updateMembershipExpiration(membership);
 
@@ -273,254 +276,6 @@ export const getMembers = async (req: Request, res: Response) => {
 
   return res.status(200).json({
     members: memberships,
-  });
-};
-
-export const getMyMembership = async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({
-      message: "Authentication required.",
-    });
-  }
-
-  if (req.user.role !== "MEMBER") {
-    return res.status(403).json({
-      message: "Only members can view their own membership.",
-    });
-  }
-
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId: req.user.userId,
-    },
-    include: {
-      gym: {
-        select: {
-          id: true,
-          name: true,
-          gymCode: true,
-          address: true,
-          description: true,
-        },
-      },
-    },
-  });
-
-  if (!membership) {
-    return res.status(404).json({
-      message: "Membership not found.",
-    });
-  }
-  const currentStatus = await updateMembershipExpiration(membership);
-
-  return res.status(200).json({
-    membership: {
-      ...membership,
-      status: currentStatus,
-    },
-  });
-};
-
-export const deactivateMember = async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({
-      message: "Authentication required.",
-    });
-  }
-
-  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
-    return res.status(403).json({
-      message: "Only the Super Admin or Gym Admin can deactivate members.",
-    });
-  }
-
-  const memberId = Number(req.params.memberId);
-
-  const member = await prisma.user.findUnique({
-    where: {
-      id: memberId,
-    },
-  });
-
-  if (!member || member.role !== "MEMBER") {
-    return res.status(404).json({
-      message: "Member not found.",
-    });
-  }
-
-  if (req.user.role === "ADMIN") {
-    const adminGym = await getAdminGym(req.user.userId);
-
-    if (!adminGym) {
-      return res.status(403).json({
-        message: "You must be managing a gym to deactivate members.",
-      });
-    }
-
-    const isMember = await isMemberInGym(memberId, adminGym.id);
-
-    if (!isMember) {
-      return res.status(403).json({
-        message: "You can only deactivate members of your gym.",
-      });
-    }
-  }
-
-  if (member.status === "DEACTIVATED") {
-    return res.status(400).json({
-      message: "Member is already deactivated.",
-    });
-  }
-
-  const result = await prisma.$transaction(async (tx) => {
-    const updatedMember = await tx.user.update({
-      where: {
-        id: memberId,
-      },
-      data: {
-        status: "DEACTIVATED",
-      },
-    });
-
-    const updatedMembership = await tx.membership.update({
-      where: {
-        userId: memberId,
-      },
-      data: {
-        expiryDate: new Date(),
-        status: "EXPIRED",
-      },
-    });
-
-    const activityLog = await tx.activityLog.create({
-      data: {
-        memberId: memberId,
-        memberFirstName: member.firstName,
-        memberLastName: member.lastName,
-        gymId: updatedMembership.gymId,
-        performedByUserId: req.user!.userId,
-        action: "DEACTIVATED",
-        details: "Member deactivated.",
-      },
-    });
-
-    return { updatedMember, updatedMembership, activityLog };
-  });
-
-  return res.status(200).json({
-    message: "Member deactivated successfully.",
-    member: {
-      id: result.updatedMember.id,
-      firstName: result.updatedMember.firstName,
-      lastName: result.updatedMember.lastName,
-      username: result.updatedMember.username,
-      status: result.updatedMember.status,
-    },
-    membership: {
-      status: result.updatedMembership.status,
-      startDate: result.updatedMembership.startDate,
-      expiryDate: result.updatedMembership.expiryDate,
-    },
-  });
-};
-
-export const activateMember = async (req: Request, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({
-      message: "Authentication required.",
-    });
-  }
-
-  if (req.user.role !== "SUPER_ADMIN" && req.user.role !== "ADMIN") {
-    return res.status(403).json({
-      message: "Only the Super Admin or Gym Admin can activate members.",
-    });
-  }
-
-  const memberId = Number(req.params.memberId);
-
-  const member = await prisma.user.findUnique({
-    where: {
-      id: memberId,
-    },
-  });
-
-  if (!member || member.role !== "MEMBER") {
-    return res.status(404).json({
-      message: "Member not found.",
-    });
-  }
-
-  if (req.user.role === "ADMIN") {
-    const adminGym = await getAdminGym(req.user.userId);
-
-    if (!adminGym) {
-      return res.status(403).json({
-        message: "You must be managing a gym to activate members.",
-      });
-    }
-
-    const isMember = await isMemberInGym(memberId, adminGym.id);
-
-    if (!isMember) {
-      return res.status(403).json({
-        message: "You can only activate members of your gym.",
-      });
-    }
-  }
-
-  if (member.status === "ACTIVE") {
-    return res.status(400).json({
-      message: "Member is already active.",
-    });
-  }
-
-  const membership = await prisma.membership.findUnique({
-    where: {
-      userId: memberId,
-    },
-  });
-
-  if (!membership) {
-    return res.status(404).json({
-      message: "Membership not found.",
-    });
-  }
-
-  const result = await prisma.$transaction(async (tx) => {
-    const updatedMember = await tx.user.update({
-      where: {
-        id: memberId,
-      },
-      data: {
-        status: "ACTIVE",
-      },
-    });
-
-    const activityLog = await tx.activityLog.create({
-      data: {
-        memberId: memberId,
-        memberFirstName: updatedMember.firstName,
-        memberLastName: updatedMember.lastName,
-        gymId: membership.gymId,
-        performedByUserId: req.user!.userId,
-        action: "ACTIVATED",
-        details: "Member activated.",
-      },
-    });
-
-    return { updatedMember, activityLog };
-  });
-
-  return res.status(200).json({
-    message: "Member activated successfully.",
-    member: {
-      id: result.updatedMember.id,
-      firstName: result.updatedMember.firstName,
-      lastName: result.updatedMember.lastName,
-      username: result.updatedMember.username,
-      status: result.updatedMember.status,
-    },
   });
 };
 
@@ -539,7 +294,19 @@ export const editMember = async (req: Request, res: Response) => {
 
   const memberId = Number(req.params.memberId);
 
+  if (Number.isNaN(memberId)) {
+    return res.status(400).json({
+      message: "Invalid member ID.",
+    });
+  }
+
   const { firstName, lastName, phone, email } = req.body;
+
+  if (!firstName || !lastName || !phone) {
+    return res.status(400).json({
+      message: "First name, last name, and phone are required.",
+    });
+  }
 
   const nameRegex = /^[A-Za-zÀ-ÿ]+(?:[ '-][A-Za-zÀ-ÿ]+)*$/;
 
@@ -551,12 +318,6 @@ export const editMember = async (req: Request, res: Response) => {
 
   const normalizedFirstName = normalizeName(firstName);
   const normalizedLastName = normalizeName(lastName);
-
-  if (!firstName || !lastName || !phone) {
-    return res.status(400).json({
-      message: "First name, last name, and phone are required.",
-    });
-  }
 
   if (email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -661,6 +422,7 @@ export const editMember = async (req: Request, res: Response) => {
       },
     });
 
+    // Keep the stored member name in historical logs and transactions up to date.
     if (nameChanged) {
       await tx.activityLog.updateMany({
         where: {
@@ -729,6 +491,12 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
 
   const memberId = Number(req.params.memberId);
 
+  if (Number.isNaN(memberId)) {
+    return res.status(400).json({
+      message: "Invalid member ID.",
+    });
+  }
+
   const member = await prisma.user.findUnique({
     where: {
       id: memberId,
@@ -759,8 +527,8 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
     }
   }
 
-  const newPassword = generateMemberPassword();
-  const hashedPassword = await hashPassword(newPassword);
+  // Generate a new permanent password and its hash; only the hash is stored in the database.
+  const { password, passwordHash } = await generatePassword();
 
   const membership = await prisma.membership.findUnique({
     where: {
@@ -780,7 +548,7 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
         id: memberId,
       },
       data: {
-        passwordHash: hashedPassword,
+        passwordHash,
       },
     });
 
@@ -804,7 +572,7 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
     credentials: {
       userId: result.updatedMember.id,
       username: result.updatedMember.username,
-      password: newPassword,
+      password,
     },
   });
 };
@@ -867,6 +635,7 @@ export const deleteMember = async (req: Request, res: Response) => {
     gymId = member.memberships[0]?.gymId ?? null;
   }
 
+  // Log the deletion before removing the member, so the activity record is preserved.
   await prisma.$transaction(async (tx) => {
     await tx.activityLog.create({
       data: {

@@ -15,6 +15,7 @@ export const getActivityLogs = async (req: Request, res: Response) => {
     });
   }
 
+  // Admins can only view logs from their own gym, Super Admins can view all logs.
   let where = {};
 
   if (req.user.role === "ADMIN") {
@@ -91,6 +92,7 @@ export const editActivityLog = async (req: Request, res: Response) => {
     });
   }
 
+  // Admins can only modify activity logs belonging to their own gym.
   if (req.user.role === "ADMIN") {
     const adminGym = await getAdminGym(req.user.userId);
 
@@ -148,6 +150,7 @@ export const deleteActivityLog = async (req: Request, res: Response) => {
     });
   }
 
+  // Admins can only delete activity logs belonging to their own gym.
   if (req.user.role === "ADMIN") {
     const adminGym = await getAdminGym(req.user.userId);
 

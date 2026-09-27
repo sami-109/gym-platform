@@ -1,6 +1,6 @@
 import { type Request, type Response } from "express";
-import crypto from "crypto";
-import bcrypt from "bcrypt";
+import { generatePassword } from "../utils/password.js";
+import { generateUniqueUsername } from "../utils/username.js";
 
 import prisma from "../lib/prisma.js";
 
@@ -29,19 +29,11 @@ export const createAdmin = async (req: Request, res: Response) => {
     });
   }
 
-  const baseUsername = `${firstName}${lastName}`
-    .toLowerCase()
-    .replace(/\s+/g, "");
+  // Generate an available username by adding a number if the base username exists.
+  const username = await generateUniqueUsername(firstName, lastName);
 
-  let username = baseUsername;
-  let counter = 2;
-
-  while (await prisma.user.findUnique({ where: { username } })) {
-    username = `${baseUsername}${counter}`;
-    counter++;
-  }
-  const password = crypto.randomBytes(8).toString("hex");
-  const hashedPassword = await bcrypt.hash(password, 10);
+  // Generate the user's password and its hash, only the hash is stored in the database.
+  const { password, passwordHash } = await generatePassword();
 
   const admin = await prisma.user.create({
     data: {
@@ -50,7 +42,7 @@ export const createAdmin = async (req: Request, res: Response) => {
       username,
       email: email || null,
       phone,
-      passwordHash: hashedPassword,
+      passwordHash,
       role: "ADMIN",
     },
   });
@@ -98,52 +90,6 @@ export const getAllAdmins = async (req: Request, res: Response) => {
   });
 };
 
-export const disconnectAdminFromGym = async (req: Request, res: Response) => {
-  if (!req.user || req.user.role !== "SUPER_ADMIN") {
-    return res.status(403).json({
-      message: "Only the Super Admin can disconnect an Admin from a gym.",
-    });
-  }
-
-  const { adminId } = req.params;
-
-  const adminIdNumber = Number(adminId);
-
-  const admin = await prisma.user.findUnique({
-    where: {
-      id: adminIdNumber,
-    },
-    include: {
-      managedGym: true,
-    },
-  });
-
-  if (!admin || admin.role !== "ADMIN") {
-    return res.status(404).json({
-      message: "Admin account not found.",
-    });
-  }
-
-  if (!admin.managedGym) {
-    return res.status(409).json({
-      message: "This Admin is not managing a gym.",
-    });
-  }
-
-  await prisma.gym.update({
-    where: {
-      id: admin.managedGym.id,
-    },
-    data: {
-      adminId: null,
-    },
-  });
-
-  return res.status(200).json({
-    message: `${admin.firstName} ${admin.lastName} is no longer managing ${admin.managedGym.name}.`,
-  });
-};
-
 export const editAdmin = async (req: Request, res: Response) => {
   if (!req.user) {
     return res.status(401).json({
@@ -159,6 +105,7 @@ export const editAdmin = async (req: Request, res: Response) => {
 
   const adminId = Number(req.params.adminId);
 
+  // Regular admins can only edit their own account, Super Admins can edit any admin.
   if (req.user.role === "ADMIN" && adminId !== req.user.userId) {
     return res.status(403).json({
       message: "You can only edit your own Admin account.",
@@ -217,6 +164,7 @@ export const editAdmin = async (req: Request, res: Response) => {
     where: {
       id: adminId,
     },
+    // Only update fields that were actually provided in the request
     data: {
       ...(firstName !== undefined && { firstName }),
       ...(lastName !== undefined && { lastName }),

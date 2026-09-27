@@ -16,6 +16,7 @@ export const getTransactions = async (req: Request, res: Response) => {
 
   let transactions;
 
+  // Admins can only see transactions belonging to the gym they manage.
   if (req.user.role === "ADMIN") {
     const gym = await prisma.gym.findUnique({
       where: {
@@ -87,6 +88,7 @@ export const deleteTransaction = async (req: Request, res: Response) => {
     });
   }
 
+  // Admins can only delete transactions belonging to their own gym.
   if (req.user.role === "ADMIN") {
     const gym = await prisma.gym.findUnique({
       where: {
@@ -151,6 +153,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     });
   }
 
+  // Admins can only edit transactions belonging to their own gym.
   if (req.user.role === "ADMIN") {
     const gym = await prisma.gym.findUnique({
       where: {
@@ -219,6 +222,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     );
   }
 
+  // Record what changed so the transaction edit is preserved in the activity log.
   if (changes.length > 0) {
     await prisma.activityLog.create({
       data: {

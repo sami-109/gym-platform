@@ -5,15 +5,14 @@ import CreateMember from "./components/CreateMember/CreateMember";
 import MemberCredentials from "./components/MemberCredentials/MemberCredentials";
 import ManageMember from "./components/ManageMember/ManageMember";
 import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
-import useMembers from "./hooks/useMembers";
+import useMembers from "./hooks/useMembersData";
 import useCreateMember from "./hooks/useCreateMember";
 import useManageMember from "./hooks/useManageMember";
 import MemberDashboard from "./components/MemberDashboard/MemberDashboard";
 import useLogin from "./hooks/useLogin";
 import useCurrentTime from "./hooks/useCurrentTime";
-import useMembership from "./hooks/useMembership";
+import useMembership from "./hooks/useMyMembership";
 import ConfirmModal from "./components/ConfirmModal/ConfirmModal";
-import ActivityLog from "./components/ActivityLog/ActivityLog";
 import Loading from "./components/Loading/Loading";
 
 function App() {
@@ -55,19 +54,13 @@ function App() {
     setNewMemberEmail,
     addMember,
     setAddMember,
-    createdMemberUsername,
-    createdMemberPassword,
-    memberCreated,
-    setMemberCreated,
-    createdMemberId,
-    createdMemberName,
-    createdMemberPhone,
-    createdMemberEmail,
-    handleCreateMember,
+    createdMemberData,
+    isMemberCreated,
+    setIsMemberCreated,
+    createMember,
     createMemberError,
     newMemberMembershipType,
     setNewMemberMembershipType,
-    createdMemberMembershipType,
     setCreateMemberError,
   } = useCreateMember(fetchMembers);
 
@@ -77,7 +70,6 @@ function App() {
     handleApplyChanges,
     openManageMember,
     deleteMember,
-    retrieveCredentials,
     retrievedCredentials,
     clearRetrievedCredentials,
 
@@ -91,6 +83,10 @@ function App() {
     setEditEmail,
     editStartDate,
     setEditStartDate,
+    showRetrieveConfirm,
+    openRetrieveCredentials,
+    closeRetrieveCredentials,
+    confirmRetrieveCredentials,
     editExpiryDate,
     setEditExpiryDate,
     editAction,
@@ -163,25 +159,25 @@ function App() {
                 onPhoneChange={setNewMemberPhone}
                 onEmailChange={setNewMemberEmail}
                 onMembershipTypeChange={setNewMemberMembershipType}
-                onCreate={handleCreateMember}
+                onCreate={createMember}
                 onClose={() => {
-                  setMemberCreated(false);
+                  setIsMemberCreated(false);
                   setAddMember(false);
                 }}
               />
             )}
 
-            {memberCreated && (
+            {isMemberCreated && createdMemberData && (
               <MemberCredentials
-                memberId={createdMemberId}
-                memberName={createdMemberName}
-                memberPhone={createdMemberPhone}
-                memberEmail={createdMemberEmail}
-                membershipType={createdMemberMembershipType}
-                username={createdMemberUsername}
-                password={createdMemberPassword}
+                memberId={createdMemberData.memberId}
+                memberName={createdMemberData.memberName}
+                memberPhone={createdMemberData.memberPhone}
+                memberEmail={createdMemberData.memberEmail}
+                membershipType={createdMemberData.membershipType}
+                username={createdMemberData.username}
+                password={createdMemberData.password}
                 onClose={() => {
-                  setMemberCreated(false);
+                  setIsMemberCreated(false);
                   setAddMember(false);
                   setCreateMemberError("");
                 }}
@@ -194,7 +190,6 @@ function App() {
                 memberName={`${retrievedMember.user.firstName} ${retrievedMember.user.lastName}`}
                 memberPhone={retrievedMember.user.phone}
                 memberEmail={retrievedMember.user.email || ""}
-                membershipType=""
                 username={retrievedCredentials.username}
                 password={retrievedCredentials.password}
                 title="Credentials Updated"
@@ -262,7 +257,10 @@ function App() {
             onActionChange={setEditAction}
             onApply={handleApplyChanges}
             onClose={closeManageMember}
-            onRetrieveCredentials={retrieveCredentials}
+            showRetrieveConfirm={showRetrieveConfirm}
+            openRetrieveCredentials={openRetrieveCredentials}
+            closeRetrieveCredentials={closeRetrieveCredentials}
+            confirmRetrieveCredentials={confirmRetrieveCredentials}
           />
         )}
 

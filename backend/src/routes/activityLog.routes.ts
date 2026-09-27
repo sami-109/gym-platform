@@ -1,10 +1,11 @@
 import { Router } from "express";
+import { authMiddleware } from "../middleware/auth.middleware.js";
+
 import {
   getActivityLogs,
   editActivityLog,
   deleteActivityLog,
 } from "../controllers/activityLog.controller.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
 

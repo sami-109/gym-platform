@@ -3,7 +3,7 @@ import prisma from "../lib/prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-export const loginMember = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -41,6 +41,7 @@ export const loginMember = async (req: Request, res: Response) => {
     });
   }
 
+  // Create a JWT containing the user's identity and role for authenticated requests.
   const token = jwt.sign(
     {
       userId: user.id,
@@ -79,6 +80,7 @@ export const getMe = async (req: Request, res: Response) => {
       id: req.user.userId,
     },
     include: {
+      // Include the gym managed by this user so the frontend has their current gym context.
       managedGym: {
         select: {
           id: true,
@@ -127,6 +129,7 @@ export const setupSuperAdmin = async (req: Request, res: Response) => {
     });
   }
 
+  // Prevent the setup endpoint from creating more than one Super Admin.
   const existingSuperAdmin = await prisma.user.findFirst({
     where: {
       role: "SUPER_ADMIN",
@@ -148,6 +151,7 @@ export const setupSuperAdmin = async (req: Request, res: Response) => {
     });
   }
 
+  // Hash the configured password before storing it in the database.
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const superAdmin = await prisma.user.create({

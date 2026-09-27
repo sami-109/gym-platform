@@ -1,18 +1,7 @@
 import "./Login.scss";
 import Loading from "../Loading/Loading";
 import { Eye, EyeOff } from "lucide-react";
-
-type LoginProps = {
-  username: string;
-  password: string;
-  showPassword: boolean;
-  message: string;
-  loggingIn: boolean;
-  onUsernameChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onShowPasswordChange: (value: boolean) => void;
-  onLogin: (event: React.SyntheticEvent<HTMLFormElement>) => void;
-};
+import type { LoginProps } from "../../types/login";
 
 function Login({
   username,

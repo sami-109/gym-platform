@@ -1,9 +1,5 @@
 import "./Sidebar.scss";
-
-type SidebarProps = {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
-};
+import type { SidebarProps } from "../../types/dashboards";
 
 function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   return (

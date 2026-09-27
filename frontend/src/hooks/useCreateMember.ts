@@ -1,37 +1,35 @@
 import { useState } from "react";
+import type { CreatedMember } from "../types/createMember";
 
 function useCreateMember(
   fetchMembers: (showLoading?: boolean) => Promise<void>,
 ) {
   const [creatingMember, setCreatingMember] = useState(false);
+
   const [newMemberFirstName, setNewMemberFirstName] = useState("");
   const [newMemberLastName, setNewMemberLastName] = useState("");
   const [newMemberPhone, setNewMemberPhone] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
+
   const [addMember, setAddMember] = useState(false);
-  const [createdMemberUsername, setCreatedMemberUsername] = useState("");
-  const [createdMemberPassword, setCreatedMemberPassword] = useState("");
-  const [memberCreated, setMemberCreated] = useState(false);
-  const [createdMemberId, setCreatedMemberId] = useState<number | null>(null);
-  const [createdMemberName, setCreatedMemberName] = useState("");
-  const [createdMemberPhone, setCreatedMemberPhone] = useState("");
-  const [createdMemberEmail, setCreatedMemberEmail] = useState("");
+
+  const [isMemberCreated, setIsMemberCreated] = useState(false);
+
+  const [createdMemberData, setCreatedMemberData] =
+    useState<CreatedMember | null>(null);
+
   const [createMemberError, setCreateMemberError] = useState("");
+
   const [newMemberMembershipType, setNewMemberMembershipType] =
     useState("1-month");
-  const [createdMemberMembershipType, setCreatedMemberMembershipType] =
-    useState("1-month");
 
-  const createMember = async () => {
+  const createMemberRequest = async (): Promise<CreatedMember | null> => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      return;
+      setCreateMemberError("Authentication token is missing.");
+      return null;
     }
-
-    setCreateMemberError("");
-
-    setCreatingMember(true);
 
     const response = await fetch("http://localhost:3000/api/members/create", {
       method: "POST",
@@ -52,7 +50,7 @@ function useCreateMember(
 
     if (!response.ok) {
       setCreateMemberError(data.message || "Something went wrong.");
-      return;
+      return null;
     }
 
     return {
@@ -60,42 +58,41 @@ function useCreateMember(
       memberName: `${newMemberFirstName} ${newMemberLastName}`,
       memberPhone: newMemberPhone,
       memberEmail: newMemberEmail,
+      membershipType: newMemberMembershipType,
       username: data.credentials.username,
       password: data.credentials.password,
     };
   };
 
-  const handleCreateMember = async () => {
+  const createMember = async () => {
     setCreatingMember(true);
+    setCreateMemberError("");
 
     try {
-      const result = await createMember();
+      const result = await createMemberRequest();
 
       if (!result) {
         return;
       }
 
-      setCreateMemberError("");
-
       await fetchMembers(false);
 
-      setCreatedMemberId(result.memberId);
-      setCreatedMemberName(result.memberName);
-      setCreatedMemberPhone(result.memberPhone);
-      setCreatedMemberEmail(result.memberEmail);
-      setCreatedMemberMembershipType(newMemberMembershipType);
+      setCreatedMemberData(result);
 
-      setCreatedMemberUsername(result.username);
-      setCreatedMemberPassword(result.password);
-      setMemberCreated(true);
-
+      setIsMemberCreated(true);
       setAddMember(false);
 
       setNewMemberFirstName("");
       setNewMemberLastName("");
       setNewMemberPhone("");
       setNewMemberEmail("");
+      setNewMemberMembershipType("1-month");
     } catch (error) {
+      setCreateMemberError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while creating the member.",
+      );
     } finally {
       setCreatingMember(false);
     }
@@ -103,6 +100,7 @@ function useCreateMember(
 
   return {
     creatingMember,
+
     newMemberFirstName,
     setNewMemberFirstName,
     newMemberLastName,
@@ -111,21 +109,21 @@ function useCreateMember(
     setNewMemberPhone,
     newMemberEmail,
     setNewMemberEmail,
+
     addMember,
     setAddMember,
-    createdMemberUsername,
-    createdMemberPassword,
-    memberCreated,
-    setMemberCreated,
-    createdMemberId,
-    createdMemberName,
-    createdMemberPhone,
-    createdMemberEmail,
-    handleCreateMember,
+
+    createdMemberData,
+    isMemberCreated,
+    setIsMemberCreated,
+
+    createMember,
+
     createMemberError,
+
     newMemberMembershipType,
     setNewMemberMembershipType,
-    createdMemberMembershipType,
+
     setCreateMemberError,
   };
 }
