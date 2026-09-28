@@ -3,6 +3,7 @@ import { type Request, type Response } from "express";
 import prisma from "../lib/prisma.js";
 import { updateMembershipExpiration } from "../utils/membership.js";
 import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
+import { getNextTransactionNumber } from "../utils/transactionNumber.js";
 
 export const getMyMembership = async (req: Request, res: Response) => {
   if (!req.user) {
@@ -167,8 +168,11 @@ export const renewMembership = async (
       },
     });
 
+    const transactionNumber = await getNextTransactionNumber(tx);
+
     const transaction = await tx.transaction.create({
       data: {
+        transactionNumber,
         memberId: membership.userId,
         memberFirstName: membership.user.firstName,
         memberLastName: membership.user.lastName,
@@ -185,6 +189,7 @@ export const renewMembership = async (
 
     const activityLog = await tx.activityLog.create({
       data: {
+        transactionId: transaction.id,
         memberId: membership.userId,
         memberFirstName: membership.user.firstName,
         memberLastName: membership.user.lastName,
@@ -660,8 +665,11 @@ export const addDayPass = async (
       },
     });
 
+    const transactionNumber = await getNextTransactionNumber(tx);
+
     const transaction = await tx.transaction.create({
       data: {
+        transactionNumber,
         memberId: membership.userId,
         memberFirstName: membership.user.firstName,
         memberLastName: membership.user.lastName,
@@ -678,6 +686,7 @@ export const addDayPass = async (
 
     const activityLog = await tx.activityLog.create({
       data: {
+        transactionId: transaction.id,
         memberId: membership.userId,
         memberFirstName: membership.user.firstName,
         memberLastName: membership.user.lastName,

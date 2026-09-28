@@ -3,6 +3,7 @@ import { generatePassword } from "../utils/password.js";
 import prisma from "../lib/prisma.js";
 import { updateMembershipExpiration } from "../utils/membership.js";
 import { getAdminGym, isMemberInGym } from "../utils/authorization.js";
+import { getNextTransactionNumber } from "../utils/transactionNumber.js";
 
 const normalizeName = (name: string) => {
   return name
@@ -177,8 +178,11 @@ export const createMember = async (req: Request, res: Response) => {
       },
     });
 
+    const transactionNumber = await getNextTransactionNumber(tx);
+
     const transaction = await tx.transaction.create({
       data: {
+        transactionNumber,
         memberId: member.id,
         memberFirstName: member.firstName,
         memberLastName: member.lastName,
@@ -195,6 +199,7 @@ export const createMember = async (req: Request, res: Response) => {
 
     const activityLog = await tx.activityLog.create({
       data: {
+        transactionId: transaction.id,
         memberId: member.id,
         memberFirstName: member.firstName,
         memberLastName: member.lastName,

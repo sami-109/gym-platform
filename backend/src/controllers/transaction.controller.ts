@@ -109,15 +109,30 @@ export const deleteTransaction = async (req: Request, res: Response) => {
     }
   }
 
-  await prisma.transaction.delete({
-    where: {
-      id: transactionId,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.activityLog.create({
+      data: {
+        transactionId: transaction.id,
+        memberId: transaction.memberId,
+        ...(transaction.memberFirstName !== null && {
+          memberFirstName: transaction.memberFirstName,
+        }),
+        ...(transaction.memberLastName !== null && {
+          memberLastName: transaction.memberLastName,
+        }),
+        gymId: transaction.gymId,
+        performedByUserId: req.user!.userId,
+        action: "TRANSACTION_DELETED",
+        details: `Transaction #${transaction.transactionNumber} deleted.`,
+      },
+    });
+
+    await tx.transaction.delete({
+      where: { id: transactionId },
+    });
   });
 
-  return res.status(200).json({
-    message: "Transaction deleted successfully.",
-  });
+  return res.status(200).json({ message: "Transaction deleted successfully." });
 };
 
 export const updateTransaction = async (req: Request, res: Response) => {
@@ -126,6 +141,8 @@ export const updateTransaction = async (req: Request, res: Response) => {
       message: "Authentication required.",
     });
   }
+
+  const performedByUserId = req.user.userId;
 
   if (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
     return res.status(403).json({
@@ -226,6 +243,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
   if (changes.length > 0) {
     await prisma.activityLog.create({
       data: {
+        transactionId: transaction.id,
         memberId: transaction.memberId,
         ...(transaction.memberFirstName !== null && {
           memberFirstName: transaction.memberFirstName,
@@ -236,7 +254,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
         gymId: transaction.gymId,
         performedByUserId: req.user.userId,
         action: "TRANSACTION_UPDATED",
-        details: `Transaction #${transaction.id} updated. ${changes.join(", ")}`,
+        details: `Transaction #${transaction.transactionNumber} updated. ${changes.join(", ")}`,
       },
     });
   }

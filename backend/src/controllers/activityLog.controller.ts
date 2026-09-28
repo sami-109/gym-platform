@@ -48,6 +48,15 @@ export const getActivityLogs = async (req: Request, res: Response) => {
           username: true,
         },
       },
+      transaction: {
+        select: {
+          id: true,
+          transactionNumber: true,
+          action: true,
+          amountPaid: true,
+          transactionDate: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -80,7 +89,7 @@ export const editActivityLog = async (req: Request, res: Response) => {
     });
   }
 
-  const { details, createdAt } = req.body;
+  const { details, activityDate } = req.body;
 
   const existingLog = await prisma.activityLog.findUnique({
     where: { id: logId },
@@ -107,8 +116,8 @@ export const editActivityLog = async (req: Request, res: Response) => {
     where: { id: logId },
     data: {
       ...(details !== undefined && { details }),
-      ...(createdAt !== undefined && {
-        createdAt: new Date(createdAt),
+      ...(activityDate !== undefined && {
+        activityDate: new Date(activityDate),
       }),
     },
   });

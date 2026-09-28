@@ -63,8 +63,9 @@ model Membership {
   gym  Gym  @relation(fields: [gymId], references: [id])
 }
 
-model Transaction {
+ model Transaction {
   id                Int      @id @default(autoincrement())
+  transactionNumber Int      @unique
   memberId          Int?
   memberFirstName String?
   memberLastName  String?
@@ -82,6 +83,8 @@ model Transaction {
   member      User? @relation("MemberTransactions", fields: [memberId], references: [id], onDelete: SetNull)
   gym         Gym    @relation(fields: [gymId], references: [id])
   performedBy User?  @relation("PerformedTransactions", fields: [performedByUserId], references: [id], onDelete: SetNull)
+
+  activityLogs ActivityLog[]
 }
 
 model ActivityLog {
@@ -98,6 +101,11 @@ model ActivityLog {
   member      User? @relation("MemberActivityLogs", fields: [memberId], references: [id], onDelete: SetNull)
   gym         Gym?  @relation(fields: [gymId], references: [id], onDelete: SetNull)
   performedBy User? @relation("PerformedActivityLogs", fields: [performedByUserId], references: [id], onDelete: SetNull)
+
+    transactionId Int?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  activityDate DateTime @default(now())
 }
 
 model MembershipPrice {

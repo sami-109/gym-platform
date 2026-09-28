@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ActivityLog" ADD COLUMN     "activityDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
