@@ -1,5 +1,6 @@
 export type ActivityLog = {
   id: number;
+  transactionId: number | null;
   memberId: number | null;
   memberFirstName: string | null;
   memberLastName: string | null;
@@ -7,6 +8,7 @@ export type ActivityLog = {
   performedByUserId: number | null;
   action: string;
   details: string | null;
+  activityDate: string;
   createdAt: string;
 
   member: {
@@ -19,4 +21,14 @@ export type ActivityLog = {
     lastName: string;
     username: string;
   } | null;
+
+  transaction: {
+    id: number;
+    transactionNumber: number;
+    action: string;
+    amountPaid: string;
+    transactionDate: string;
+  } | null;
 };
+
+export type ActivityFilter = "all" | "member" | "transaction";

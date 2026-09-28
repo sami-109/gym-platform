@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ActivityLog } from "../types/activityLog";
+import type { ActivityLog, ActivityFilter } from "../types/activityLog";
 
 export const useActivityLog = () => {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -8,6 +8,12 @@ export const useActivityLog = () => {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSavingActivityLog, setIsSavingActivityLog] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [showTypeFilter, setShowTypeFilter] = useState(false);
+
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
 
   const [deletingLog, setDeletingLog] = useState<ActivityLog | null>(null);
 
@@ -97,7 +103,7 @@ export const useActivityLog = () => {
   const updateActivityLog = async (
     logId: number,
     details: string,
-    createdAt: string,
+    activityDate: string,
   ) => {
     const token = localStorage.getItem("token");
 
@@ -119,7 +125,7 @@ export const useActivityLog = () => {
           },
           body: JSON.stringify({
             details,
-            createdAt,
+            activityDate,
           }),
         },
       );
@@ -136,7 +142,7 @@ export const useActivityLog = () => {
             ? {
                 ...log,
                 details,
-                createdAt,
+                activityDate,
               }
             : log,
         ),
@@ -159,7 +165,50 @@ export const useActivityLog = () => {
       return "";
     }
 
-    return details.replace(
+    let formattedDetails = details;
+
+    // Add a line break after the transaction update sentence.
+    formattedDetails = formattedDetails.replace(
+      /^(Transaction #\d+ updated\.)\s*/,
+      "$1\n",
+    );
+
+    // Put each transaction change on its own line.
+    formattedDetails = formattedDetails.replace(
+      /,\s*(Action:|Amount paid:|Transaction date:)/g,
+      "\n$1",
+    );
+
+    // Format Action values.
+    formattedDetails = formattedDetails.replace(
+      /Action: (1-month|day-pass|trial) → (1-month|day-pass|trial)/,
+      (_, oldAction, newAction) => {
+        const formatAction = (action: string) => {
+          switch (action) {
+            case "1-month":
+              return "1 Month";
+            case "day-pass":
+              return "Day Pass";
+            case "trial":
+              return "Trial";
+            default:
+              return action;
+          }
+        };
+
+        return `Action: ${formatAction(oldAction)} → ${formatAction(newAction)}`;
+      },
+    );
+
+    // Format amount values.
+    formattedDetails = formattedDetails.replace(
+      /Amount paid: ([\d.]+) → ([\d.]+)/,
+      (_, oldAmount, newAmount) =>
+        `Amount Paid: $${Number(oldAmount).toFixed(2)} → $${Number(newAmount).toFixed(2)}`,
+    );
+
+    // Format transaction dates.
+    formattedDetails = formattedDetails.replace(
       /Transaction date: ([^→]+) → ([^.\n]+)/,
       (_, oldDate, newDate) => {
         const formatDate = (dateString: string) => {
@@ -172,9 +221,11 @@ export const useActivityLog = () => {
           return date.toLocaleDateString("en-GB");
         };
 
-        return `Transaction date: ${formatDate(oldDate)} → ${formatDate(newDate)}`;
+        return `Transaction Date: ${formatDate(oldDate)} → ${formatDate(newDate)}`;
       },
     );
+
+    return formattedDetails;
   };
 
   const getActivityActionDisplay = (action: string) => {
@@ -268,7 +319,7 @@ export const useActivityLog = () => {
         : getActivityDetailsDisplay(log.action),
     );
 
-    setEditActivityDate(new Date(log.createdAt));
+    setEditActivityDate(new Date(log.activityDate));
   };
 
   const closeEdit = () => {
@@ -310,13 +361,25 @@ export const useActivityLog = () => {
   const now = new Date();
 
   const filteredActivityLogs = activityLogs.filter((log) => {
-    const activityDate = new Date(log.createdAt);
+    // Type filter
+    if (activityFilter === "member" && log.transactionId !== null) {
+      return false;
+    }
+
+    if (activityFilter === "transaction" && log.transactionId === null) {
+      return false;
+    }
+
+    // Date filter
+    const activityDate = new Date(log.activityDate);
 
     if (dateFilter === "1-day") {
       const startDate = new Date(now);
       startDate.setHours(0, 0, 0, 0);
 
-      return activityDate >= startDate && activityDate <= now;
+      if (!(activityDate >= startDate && activityDate <= now)) {
+        return false;
+      }
     }
 
     if (dateFilter === "1-week") {
@@ -324,7 +387,9 @@ export const useActivityLog = () => {
       startDate.setDate(startDate.getDate() - 7);
       startDate.setHours(0, 0, 0, 0);
 
-      return activityDate >= startDate && activityDate <= now;
+      if (!(activityDate >= startDate && activityDate <= now)) {
+        return false;
+      }
     }
 
     if (dateFilter === "1-month") {
@@ -332,7 +397,9 @@ export const useActivityLog = () => {
       startDate.setMonth(startDate.getMonth() - 1);
       startDate.setHours(0, 0, 0, 0);
 
-      return activityDate >= startDate && activityDate <= now;
+      if (!(activityDate >= startDate && activityDate <= now)) {
+        return false;
+      }
     }
 
     if (dateFilter === "custom") {
@@ -346,7 +413,44 @@ export const useActivityLog = () => {
       const endDate = new Date(customToDate);
       endDate.setHours(23, 59, 59, 999);
 
-      return activityDate >= startDate && activityDate <= endDate;
+      if (!(activityDate >= startDate && activityDate <= endDate)) {
+        return false;
+      }
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+
+      const memberName = log.member
+        ? `${log.member.firstName} ${log.member.lastName}`
+        : `${log.memberFirstName ?? ""} ${log.memberLastName ?? ""}`;
+
+      const performedByName = log.performedBy
+        ? `${log.performedBy.firstName} ${log.performedBy.lastName}`
+        : "";
+
+      const activity = getActivityActionDisplay(log.action);
+
+      const details = log.details ?? "";
+
+      const transactionNumber = log.transaction
+        ? String(log.transaction.transactionNumber)
+        : "";
+
+      const searchableText = [
+        memberName,
+        performedByName,
+        activity,
+        details,
+        transactionNumber,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if (!searchableText.includes(query)) {
+        return false;
+      }
     }
 
     return true;
@@ -403,6 +507,15 @@ export const useActivityLog = () => {
     customFromDate,
     customToDate,
     showCustomDate,
+
+    searchQuery,
+    setSearchQuery,
+
+    activityFilter,
+    setActivityFilter,
+
+    showTypeFilter,
+    setShowTypeFilter,
 
     isDeleting,
     isSavingActivityLog,

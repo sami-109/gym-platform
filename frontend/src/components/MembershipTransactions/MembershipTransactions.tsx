@@ -1,6 +1,6 @@
 import DatePicker from "react-datepicker";
 import useMembershipTransactions from "../../hooks/useMembershipTransactions";
-import CustomDate from "../CustomDate/customDate";
+import CustomDate from "../CustomDate/CustomDate";
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import Loading from "../Loading/Loading";
 import "react-datepicker/dist/react-datepicker.css";
@@ -174,7 +174,7 @@ function MembershipTransactions() {
                 ) : (
                   filteredTransactions.map((transaction) => (
                     <tr key={transaction.id}>
-                      <td>{transaction.id}</td>
+                      <td>{transaction.transactionNumber}</td>
 
                       <td>
                         {transaction.member

@@ -14,6 +14,7 @@ export type MembershipPriceState = {
 
 export type Transaction = {
   id: number;
+  transactionNumber: number;
   memberId: number | null;
   memberFirstName: string | null;
   memberLastName: string | null;

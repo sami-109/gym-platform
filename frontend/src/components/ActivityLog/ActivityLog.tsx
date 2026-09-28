@@ -13,6 +13,15 @@ const ActivityLog = () => {
     loading,
     error,
 
+    showTypeFilter,
+    setShowTypeFilter,
+
+    activityFilter,
+    setActivityFilter,
+
+    searchQuery,
+    setSearchQuery,
+
     deletingLog,
     editingLog,
 
@@ -52,6 +61,13 @@ const ActivityLog = () => {
     <div className="activity-log">
       <div className="activity-log-header">
         <h2>Activity Log</h2>
+
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search activities, members, transaction #..."
+        />
       </div>
 
       <div className="activity-log-filters">
@@ -104,7 +120,54 @@ const ActivityLog = () => {
           <thead>
             <tr>
               <th>Member</th>
-              <th>Action</th>
+              <th>
+                <div className="activity-type-header">
+                  <span>Type</span>
+
+                  <button
+                    type="button"
+                    className="filter-arrow"
+                    onClick={() => setShowTypeFilter(!showTypeFilter)}
+                  >
+                    ▾
+                  </button>
+
+                  {showTypeFilter && (
+                    <div className="activity-type-dropdown">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActivityFilter("all");
+                          setShowTypeFilter(false);
+                        }}
+                      >
+                        All Activity
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActivityFilter("member");
+                          setShowTypeFilter(false);
+                        }}
+                      >
+                        Membership
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActivityFilter("transaction");
+                          setShowTypeFilter(false);
+                        }}
+                      >
+                        Transaction
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </th>
+              <th>Activity</th>
               <th>Performed By</th>
               <th>Date</th>
               <th>Actions</th>
@@ -114,7 +177,7 @@ const ActivityLog = () => {
           <tbody>
             {filteredActivityLogs.length === 0 ? (
               <tr>
-                <td colSpan={5}>No activity logs</td>
+                <td colSpan={6}>No activity logs</td>
               </tr>
             ) : (
               filteredActivityLogs.map((log) => (
@@ -127,6 +190,10 @@ const ActivityLog = () => {
                         : "Deleted member"}
                   </td>
 
+                  <td>
+                    {log.transactionId !== null ? "Transaction" : "Membership"}
+                  </td>
+
                   <td>{getActivityActionDisplay(log.action)}</td>
 
                   <td>
@@ -135,7 +202,9 @@ const ActivityLog = () => {
                       : "Deleted user"}
                   </td>
 
-                  <td>{new Date(log.createdAt).toLocaleDateString("en-GB")}</td>
+                  <td>
+                    {new Date(log.activityDate).toLocaleDateString("en-GB")}
+                  </td>
 
                   <td>
                     <div className="action-buttons">
@@ -177,6 +246,12 @@ const ActivityLog = () => {
                 <div className="modal-header">
                   <h2>Edit Activity Log</h2>
 
+                  {editingLog.transaction && (
+                    <p>
+                      Transaction #{editingLog.transaction.transactionNumber}
+                    </p>
+                  )}
+
                   <p>
                     {editingLog.member
                       ? `${editingLog.member.firstName} ${editingLog.member.lastName}`
@@ -197,15 +272,26 @@ const ActivityLog = () => {
                   </label>
 
                   <label>
-                    Details
-                    <textarea
-                      value={editDetails}
-                      onChange={(event) => setEditDetails(event.target.value)}
+                    Created At
+                    <input
+                      type="text"
+                      value={new Date(editingLog.createdAt).toLocaleString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        },
+                      )}
+                      disabled
                     />
                   </label>
 
                   <label>
-                    Date
+                    ActivityDate
                     <DatePicker
                       selected={editActivityDate}
                       onChange={(date: Date | null) =>
@@ -213,6 +299,14 @@ const ActivityLog = () => {
                       }
                       dateFormat="dd/MM/yyyy"
                       placeholderText="Select date"
+                    />
+                  </label>
+
+                  <label>
+                    Details
+                    <textarea
+                      value={editDetails}
+                      onChange={(event) => setEditDetails(event.target.value)}
                     />
                   </label>
                 </div>
